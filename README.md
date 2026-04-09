@@ -8,9 +8,9 @@
 <h1 align="center">Liferay Workspace Claude Plugin</h1>
 
 <p align="center">
-  <strong>Set up, manage, and debug Liferay DXP workspaces with AI-powered slash commands.</strong>
+  <strong>Set up, manage, and develop in Liferay DXP workspaces with AI-powered slash commands.</strong>
   <br />
-  Docker & source mode setup, service orchestration, portal source analysis — all from your terminal.
+  Workspace setup, portal source analysis, implementation workflows, and Jira ticket generation — all from your terminal.
 </p>
 
 <p align="center">
@@ -53,13 +53,31 @@ That's it. The setup wizard walks you through everything.
 
 ## Skills
 
+### Workspace Management
+
 | Skill | Command | Description |
 |-------|---------|-------------|
-| **Setup** | `/liferay-workspace:setup` | Interactive workspace configuration wizard — Docker or source mode |
+| **Setup** | `/liferay-workspace:setup [source]` | Interactive workspace configuration wizard — Docker or source mode |
 | **Setup Source** | `/liferay-workspace:setup-source` | Clone and build `liferay-portal-ee` from source |
 | **Doctor** | `/liferay-workspace:doctor` | Prerequisite checks and running service health dashboard |
 | **Clean** | `/liferay-workspace:clean` | Remove containers, build artifacts, and bundle data |
 | **Core** | `/liferay-workspace:core <mode> <query>` | Deep analysis of portal source code (root-cause & guide modes) |
+
+### Development Workflow
+
+| Skill | Command | Description |
+|-------|---------|-------------|
+| **Plan** | `/liferay-workspace:plan <ticket or description>` | Create an implementation plan — affected modules, steps, testing strategy, and risks |
+| **Implement** | `/liferay-workspace:implement <ticket or description>` | Implement a feature or fix based on a plan or ticket description |
+| **Commit** | `/liferay-workspace:commit [TICKET-000] [description]` | Create a git commit following `TICKET-000 Imperative verb description` convention |
+| **PR** | `/liferay-workspace:pr [TICKET-000]` | Create a GitHub pull request with Jira ticket link and structured description |
+
+### Jira Tickets
+
+| Skill | Command | Description |
+|-------|---------|-------------|
+| **Bug** | `/liferay-workspace:bug <summary>` | Generate a Jira bug report with steps to reproduce, Liferay version, actual/expected results |
+| **Feature Request** | `/liferay-workspace:feature-request <summary>` | Generate a Jira feature request with assumptions and acceptance criteria |
 
 ---
 
@@ -82,18 +100,28 @@ The skills are designed to work together in a natural development lifecycle:
      │ compose.yml   │     │ Build source │
      │ Start all     │     │ Start deps   │
      └──────────────┘     └──────────────┘
-                                │
-                                ▼
-                          ┌──────────┐
-                          │  Core    │
-                          │ Analyze  │
-                          │ source   │
-                          └──────────┘
+              │                     │
+              └──────────┬──────────┘
+                         ▼
+  Bug / Feature     ┌──────────┐     Plan
+  ┌──────────┐      │  Core    │     ┌──────────┐
+  │ Create   │      │ Analyze  │────▶│ Design   │
+  │ tickets  │      │ source   │     │ approach │
+  └──────────┘      └──────────┘     └────┬─────┘
+                                          │
+                                          ▼
+                    Implement         Commit            PR
+                    ┌──────────┐     ┌──────────┐     ┌──────────┐
+                    │ Build &  │────▶│ Stage &  │────▶│ Push &   │
+                    │ deploy   │     │ commit   │     │ open PR  │
+                    └──────────┘     └──────────┘     └──────────┘
 ```
 
 - **`setup`** orchestrates the entire flow — it calls `doctor` and `clean` automatically before configuring.
 - **`setup-source`** is invoked by `setup` when source mode is selected.
 - **`core`** works independently for portal source code investigation at any time.
+- **`bug`** / **`feature-request`** generate structured Jira tickets.
+- **`plan`** → **`implement`** → **`commit`** → **`pr`** is the development workflow chain.
 
 ---
 
@@ -204,6 +232,86 @@ Usage Guide:
   [complete guide with code snippets derived from source]
 ```
 
+### Planning and implementing a feature
+
+```
+> /liferay-workspace:plan LPD-12345 Add custom field validation for object definitions
+
+Implementation Plan
+===================
+Ticket:      LPD-12345
+Summary:     Add custom field validation for object definitions
+Complexity:  Medium
+
+Affected Modules:
+  - modules/objects/objects-validation — new validation logic
+  - modules/objects/objects-web — UI for validation rules
+
+Steps:
+  1. Create ObjectFieldValidationImpl in objects-validation
+  2. Register OSGi component with @Component annotation
+  3. Add validation rule configuration UI in objects-web
+  4. Write integration tests
+
+Ready to proceed, or any adjustments?
+```
+
+```
+> /liferay-workspace:implement LPD-12345
+
+# Implements the plan, builds, and deploys
+✓ ObjectFieldValidationImpl.java created
+✓ Validation UI component added
+✓ Build passed
+✓ Deployed to bundles/deploy
+
+Next: run /commit to commit, then /pr to open a pull request.
+```
+
+### Committing and creating a PR
+
+```
+> /liferay-workspace:commit LPD-12345 Add custom field validation for object definitions
+
+✓ 4 files staged
+✓ Created: LPD-12345 Add custom field validation for object definitions
+```
+
+```
+> /liferay-workspace:pr LPD-12345
+
+Pull Request Created
+====================
+PR:       https://github.com/org/repo/pull/42
+Ticket:   https://liferay.atlassian.net/browse/LPD-12345
+Title:    LPD-12345 Add custom field validation for object definitions
+Base:     main
+Commits:  1
+```
+
+### Filing a bug report
+
+```
+> /liferay-workspace:bug NPE when approving journal articles with null display date
+
+Bug Report
+==========
+Summary:     NPE when approving journal articles with null display date
+Component:   Journal
+Affects:     Liferay DXP 2026.q1.2
+Severity:    Major
+
+Steps to Reproduce:
+  1. Create a journal article via Headless API without displayDate
+  2. Submit for workflow approval
+  3. Approve the article
+
+Actual Result:   NullPointerException at JournalArticleLocalServiceImpl:4538
+Expected Result: Article approved successfully with default display date
+
+Anything to adjust before filing?
+```
+
 ### Cleaning the workspace
 
 ```
@@ -251,8 +359,20 @@ liferay-workspace-claude-plugin/
 │   │   └── SKILL.md             # Source mode clone & build
 │   ├── doctor/
 │   │   └── SKILL.md             # Prerequisite checks & health dashboard
-│   └── clean/
-│       └── SKILL.md             # Artifact cleanup
+│   ├── clean/
+│   │   └── SKILL.md             # Artifact cleanup
+│   ├── plan/
+│   │   └── SKILL.md             # Implementation planning
+│   ├── implement/
+│   │   └── SKILL.md             # Feature/fix implementation
+│   ├── commit/
+│   │   └── SKILL.md             # Git commit with ticket convention
+│   ├── pr/
+│   │   └── SKILL.md             # GitHub pull request creation
+│   ├── bug/
+│   │   └── SKILL.md             # Jira bug report generator
+│   └── feature-request/
+│       └── SKILL.md             # Jira feature request generator
 ├── scripts/
 │   ├── rg-liferay.sh            # Fast portal source search
 │   ├── clone_portal.sh          # Clone liferay-portal-ee
