@@ -1,8 +1,8 @@
 ---
-name: implement
-description: Implement a feature or fix in the Liferay Workspace based on a plan or ticket description.
 argument-hint: <ticket or description of what to implement>
+description: Implement a feature or fix in the Liferay Workspace based on a plan or ticket description. Use when the user asks to implement, build, or code a ticket, or invokes /implement.
 disable-model-invocation: true
+name: implement
 ---
 
 # Implement

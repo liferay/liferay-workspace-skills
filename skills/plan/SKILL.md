@@ -1,8 +1,9 @@
 ---
-name: plan
-description: Create an implementation plan for a Liferay feature or fix — analyze requirements, identify affected modules, and outline steps.
+allowed-tools: Read Grep Glob Bash(ls *) Bash(cat *)
 argument-hint: <ticket or description of what to implement>
+description: Create an implementation plan for a Liferay feature or fix — analyze requirements, identify affected modules, outline steps. Use when the user asks to plan work, scope a ticket, or invokes /plan.
 disable-model-invocation: true
+name: plan
 ---
 
 # Plan

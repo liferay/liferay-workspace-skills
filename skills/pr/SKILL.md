@@ -1,7 +1,9 @@
 ---
-name: pr
-description: Create a GitHub pull request with a structured description including Jira ticket link.
+allowed-tools: Read Glob Grep Bash(git *) Bash(gh *)
+argument-hint: [TICKET-000]
+description: Create a GitHub pull request with a structured description including Jira ticket link. Use when the user asks to send/open a PR, create a pull request, or invokes /pr.
 disable-model-invocation: true
+name: pr
 ---
 
 # Pull Request

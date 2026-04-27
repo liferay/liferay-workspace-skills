@@ -1,7 +1,7 @@
 ---
-name: setup-source
-description: Clone and build Liferay Portal from source, then write source-mode config files.
+description: Clone and build Liferay Portal from source, then write source-mode config files. Use when the user asks to set up portal source mode, clone liferay-portal, or invokes /setup-source.
 disable-model-invocation: false
+name: setup-source
 ---
 
 Read `.liferay-workspace.json`. Extract:

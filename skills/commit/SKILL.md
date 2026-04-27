@@ -1,7 +1,9 @@
 ---
-name: commit
-description: Create a git commit following the Liferay convention — TICKET-000 Imperative verb description.
+allowed-tools: Read Glob Grep Bash(git *)
+argument-hint: [TICKET-000] [description]
+description: Create a Git commit following the Liferay convention — TICKET-000 Imperative verb description. Use when the user asks to commit, wants to commit changes, or invokes /commit.
 disable-model-invocation: true
+name: commit
 ---
 
 # Commit

@@ -1,7 +1,8 @@
 ---
-name: setup
-description: Interactive setup wizard for a Liferay Workspace. Configures paths, hotfix, mode, docker-compose elements, and writes a workspace config file.
+argument-hint: "[source]"
+description: Interactive setup wizard for a Liferay Workspace. Configures paths, hotfix, mode, docker-compose elements, and writes a workspace config file. Use when the user asks to set up a workspace, initialize one, or invokes /setup.
 disable-model-invocation: true
+name: setup
 ---
 
 If invoked with the argument `source`, follow the **Source mode** flow throughout (Steps 1, 3, 5–8). Otherwise follow the **Docker mode** flow (Steps 1, 2, 4, 5, 7–8).

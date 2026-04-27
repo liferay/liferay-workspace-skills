@@ -1,7 +1,8 @@
 ---
-name: doctor
-description: Check Liferay Workspace prerequisites (JDK 17–23, Docker) and show a health summary of running services.
+allowed-tools: Read Bash(java *) Bash(docker *) Bash(ant *) Bash(cat *) Bash(ls *)
+description: Check Liferay Workspace prerequisites (JDK 17–23, Docker) and show a health summary of running services. Use when the user asks about workspace health, prerequisites, or invokes /doctor.
 disable-model-invocation: false
+name: doctor
 ---
 
 ## Prerequisite checks

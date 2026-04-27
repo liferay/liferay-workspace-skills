@@ -1,7 +1,7 @@
 ---
-name: clean
-description: Clean Liferay Workspace build artifacts, Docker containers, and bundle data.
+description: Clean Liferay Workspace build artifacts, Docker containers, and bundle data. Use when the user asks to clean, reset, or wipe the workspace, or invokes /clean.
 disable-model-invocation: false
+name: clean
 ---
 
 If invoked from another skill (e.g. setup), run with the defaults below without asking — skip the toggle prompt entirely.

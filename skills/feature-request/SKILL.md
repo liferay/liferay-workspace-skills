@@ -1,8 +1,9 @@
 ---
-name: feature-request
-description: Create a Jira feature request with description, Liferay version, assumptions, and acceptance criteria.
+allowed-tools: Read Bash(cat *)
 argument-hint: <summary of the feature>
+description: Create a Jira feature request with description, Liferay version, assumptions, and acceptance criteria. Use when the user asks to file a feature request, propose a feature, or invokes /feature-request.
 disable-model-invocation: true
+name: feature-request
 ---
 
 # Feature Request

@@ -1,8 +1,9 @@
 ---
-name: bug
-description: Create a Jira bug ticket with structured fields — description, steps to reproduce, Liferay version, actual/expected results.
+allowed-tools: Read Bash(git branch *) Bash(cat *)
 argument-hint: <summary of the bug>
+description: Create a Jira bug ticket with structured fields — description, steps to reproduce, Liferay version, actual/expected results. Use when the user asks to file a bug, report an issue, or invokes /bug.
 disable-model-invocation: true
+name: bug
 ---
 
 # Bug Report

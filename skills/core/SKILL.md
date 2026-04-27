@@ -1,7 +1,8 @@
 ---
-name: core
-description: Search and analyze Liferay Portal source code. Two modes — "root-cause" to investigate bugs from stack traces/errors, "guide" to understand how to use a feature or module by reading its source. Use when working with liferay-portal / liferay-portal-ee.
+allowed-tools: Read Grep Glob Bash(bash scripts/rg-liferay.sh *) Bash(git -C *) Bash(cat *) Bash(ls *) Bash(find *)
 argument-hint: <root-cause|guide> <query>
+description: Search and analyze Liferay Portal source code. Modes — root-cause (investigate bugs from stack traces) or guide (understand a feature). Use when working with liferay-portal / liferay-portal-ee, or invoked via /core.
+name: core
 ---
 
 # Liferay Portal Source — Core Skill
