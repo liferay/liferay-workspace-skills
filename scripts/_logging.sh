@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 # Logging utilities — sourced by local_setup.sh.
-# Strict mode (set -euo pipefail) is set once in the entry script.
 
-# Disable color when piped (stdout not a TTY) or when NO_COLOR is set
-# (https://no-color.org). $'...' (ANSI-C quoting) embeds the raw ESC byte so
-# the strings render correctly with both `printf '%s'` and `echo -e`.
+# Disable color when stdout is not a TTY or NO_COLOR is set (no-color.org).
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
 	BOLD=$'\033[1m'
 	CYAN=$'\033[36m'

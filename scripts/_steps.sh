@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Setup step functions — sourced by local_setup.sh.
-# Strict mode (set -euo pipefail) is set once in the entry script.
 
-# Log messages the script waits on
 readonly LOG_MARKER_TOMCAT_STARTUP='org.apache.catalina.startup.Catalina.start Server startup'
 readonly LOG_MARKER_WELCOME_SITE='Initialized com.liferay.site.initializer.welcome'
 readonly LOG_MARKER_LICENSE='License registered for DXP Development'
@@ -33,7 +31,6 @@ step_clean() {
 	log_step "Cleaning environment"
 
 	if [ "$LIFERAY_MODE" = "source" ]; then
-		# Kill any Java/Tomcat processes bound to Liferay ports
 		for port in 8080 8000; do
 			local pid
 			pid=$(lsof -ti :"$port" 2>/dev/null || true)
@@ -73,8 +70,8 @@ step_clean() {
 	else
 		log_cmd rm -rf bundles/data bundles/deploy bundles/logs bundles/osgi bundles/routes bundles/esdata
 	fi
-	# Scope the sweep to known workspace subdirectories so a misinvocation from
-	# the wrong CWD can't recursively delete unrelated build/dist/node_modules trees.
+	# Scope to known workspace subdirs so a misinvocation from the wrong CWD
+	# can't recursively wipe unrelated trees.
 	local -a clean_targets=()
 	for dir in modules client-extensions; do
 		[ -d "$dir" ] && clean_targets+=("$dir")

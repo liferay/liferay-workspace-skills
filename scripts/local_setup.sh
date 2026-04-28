@@ -2,27 +2,20 @@
 
 set -euo pipefail
 
-# --- Bootstrap: source logging first so log_error is available immediately
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Logging must load before helpers so log_error is in scope when detect_mode runs.
 # shellcheck source=scripts/_logging.sh
 source "$SCRIPT_DIR/_logging.sh"
 # shellcheck source=scripts/_helpers.sh
 source "$SCRIPT_DIR/_helpers.sh"
 
-# --- Mode detection
-
 detect_mode "$@"
-
-# --- Source remaining helpers
 
 # shellcheck source=scripts/_prereqs.sh
 source "$SCRIPT_DIR/_prereqs.sh"
 # shellcheck source=scripts/_steps.sh
 source "$SCRIPT_DIR/_steps.sh"
-
-# --- Resolve hotfix info (cached for later steps)
 
 HOTFIX_NAME=$(resolve_hotfix_name)
 HOTFIX_GIT_REVISION=""
@@ -31,11 +24,7 @@ if [ "$LIFERAY_MODE" = "source" ]; then
 	HOTFIX_GIT_REVISION=$(resolve_git_revision)
 fi
 
-# --- Banner
-
 print_banner
-
-# --- CLI
 
 usage() {
 	echo "Usage: $0 [command] [--source]"

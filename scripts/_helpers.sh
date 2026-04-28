@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # General helpers — sourced by local_setup.sh.
-# Strict mode (set -euo pipefail) is set once in the entry script.
 
 docker_compose_cmd() {
 	if [ "$LIFERAY_MODE" = "source" ]; then
@@ -13,7 +12,6 @@ docker_compose_cmd() {
 find_tomcat_dir() {
 	local tomcat_dir=""
 
-	# Try to read the exact version from app.server.properties
 	if [ -n "${LIFERAY_PORTAL_SOURCE:-}" ] && [ -f "$LIFERAY_PORTAL_SOURCE/app.server.properties" ]; then
 		local tomcat_version
 		tomcat_version=$(grep -E '^\s*app\.server\.tomcat\.version=' "$LIFERAY_PORTAL_SOURCE/app.server.properties" | sed 's/.*=//' | tr -d '[:space:]')
@@ -23,7 +21,6 @@ find_tomcat_dir() {
 		fi
 	fi
 
-	# Fallback: 
 	# shellcheck disable=SC2012
 	if [ -z "$tomcat_dir" ]; then
 		tomcat_dir=$(ls -td "$PORTAL_BUNDLES"/tomcat-* 2>/dev/null | head -1)
@@ -40,6 +37,7 @@ _force_kill() {
 	local pid="$1"
 	kill "$pid" 2>/dev/null || true
 	sleep 1
+	kill -0 "$pid" 2>/dev/null || return 0
 	kill -9 "$pid" 2>/dev/null || true
 }
 
@@ -146,15 +144,13 @@ wait_for_log() {
 
 	echo "Waiting for ${label}..."
 
-	# Use a FIFO so the log tailer runs as a named background process whose PID we
-	# control, avoiding the pkill-by-name fragility of a pipeline approach.
+	# A named FIFO + tracked PID is more robust than a `cmd | while read` pipeline,
+	# which would require pkill-by-name to clean up the tailer.
 	local fifo
 	fifo=$(mktemp -u /tmp/wait_for_log.XXXXXX)
 	mkfifo "$fifo"
 
-	# Single cleanup path — fires on every return (success, error, set -e abort).
-	# Replaces the previously duplicated cleanup at each exit point. Trailing
-	# `true` keeps the trap's exit status zero so it doesn't trip set -e.
+	# Trailing `true` keeps the trap's exit status zero so it doesn't trip set -e.
 	trap '[ -n "${log_pid:-}" ] && kill "$log_pid" 2>/dev/null; rm -f "$fifo"; true' RETURN
 
 	if [ "$LIFERAY_MODE" = "source" ]; then

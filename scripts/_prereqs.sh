@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Prerequisite checks and portal source setup — sourced by local_setup.sh.
-# Strict mode (set -euo pipefail) is set once in the entry script.
 
 require() {
 	local name="$1"
@@ -62,10 +61,9 @@ _hotfix_zip_path() {
 	fi
 }
 
-# Extracts a value from hotfix.json using a dot-separated key path. Hyphenated
-# keys (e.g. "build.git-revision") are handled by splitting the path inside jq
-# rather than relying on jq's bareword key syntax.
-# Tries the local hotfix zip first, then falls back to the bundles directory.
+# Read hotfix.json by dot-path. Splits the path inside jq via getpath so hyphenated
+# keys (build.git-revision) work without bareword quoting. Prefers the local zip;
+# falls back to the unpacked file under bundles/.
 _read_hotfix_json() {
 	local json_path="$1"
 	local jq_filter='($path | split(".")) as $p | getpath($p) // ""'

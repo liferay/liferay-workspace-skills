@@ -1,28 +1,9 @@
 #!/usr/bin/env bash
-# rg-liferay.sh — fast search across large Liferay Portal source trees
+# rg-liferay.sh — fast search across large Liferay Portal source trees.
 # Compatible with macOS, Ubuntu, and WSL.
-#
-# Usage:
-#   bash rg-liferay.sh [options] <pattern>
-#
-# The pattern must be the LAST argument (after all options).
-#
-# Options:
-#   -d <dir>        Search root (default: current directory)
-#   -t <type>       File type filter: java, xml, jsp, js, properties, gradle, bnd, yaml (default: all)
-#   -l              List matching files only (no content)
-#   -n <limit>      Max results (default: 40)
-#   -i              Case-insensitive search
-#   -w              Match whole words only
-#   -m <module>     Restrict search to a specific module path (e.g. portal-kernel, modules/apps/journal)
-#   -C <lines>      Context lines around each match (default: 2)
-#   -h              Show this help
-#
-# Requires: ripgrep (rg). Falls back to grep -rn if rg is not installed.
 
-set -eo pipefail
+set -euo pipefail
 
-# --- defaults ----------------------------------------------------------------
 SEARCH_DIR="."
 FILE_TYPE=""
 LIST_ONLY=false
@@ -33,11 +14,30 @@ MODULE_PATH=""
 CONTEXT=2
 
 usage() {
-  sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
+  cat <<'EOF'
+rg-liferay.sh — fast search across large Liferay Portal source trees.
+
+Usage:
+  bash rg-liferay.sh [options] <pattern>
+
+The pattern must be the LAST argument (after all options).
+
+Options:
+  -d <dir>        Search root (default: current directory)
+  -t <type>       File type filter: java, xml, jsp, js, properties, gradle, bnd, yaml (default: all)
+  -l              List matching files only (no content)
+  -n <limit>      Max results (default: 40)
+  -i              Case-insensitive search
+  -w              Match whole words only
+  -m <module>     Restrict search to a specific module path (e.g. portal-kernel, modules/apps/journal)
+  -C <lines>      Context lines around each match (default: 2)
+  -h              Show this help
+
+Requires: ripgrep (rg). Falls back to grep -rn if rg is not installed.
+EOF
   exit 0
 }
 
-# --- parse options -----------------------------------------------------------
 while getopts "d:t:ln:iwm:C:h" opt; do
   case "$opt" in
     d) SEARCH_DIR="$OPTARG" ;;
@@ -61,7 +61,6 @@ if [ -z "$PATTERN" ]; then
   exit 1
 fi
 
-# --- resolve search target ---------------------------------------------------
 TARGET="$SEARCH_DIR"
 if [ -n "$MODULE_PATH" ]; then
   TARGET="$SEARCH_DIR/$MODULE_PATH"
@@ -71,7 +70,6 @@ if [ -n "$MODULE_PATH" ]; then
   fi
 fi
 
-# --- Liferay-specific exclusions (build output, caches, generated code) ------
 EXCLUDES=(
   # Build output
   "classes"
@@ -121,7 +119,6 @@ EXCLUDES=(
   "*.map"
 )
 
-# --- file-type mapping (bash 3.2 compatible — no associative arrays) ---------
 type_globs() {
   case "$1" in
     java)       echo "*.java" ;;
@@ -139,9 +136,7 @@ type_globs() {
 }
 AVAILABLE_TYPES="java xml jsp js properties gradle bnd ftl css yaml"
 
-# --- build command -----------------------------------------------------------
 if command -v rg &>/dev/null; then
-  # ---- ripgrep path --------------------------------------------------------
   CMD=(rg --no-heading --color=never)
 
   if [ "$LIST_ONLY" = true ]; then
@@ -177,7 +172,6 @@ if command -v rg &>/dev/null; then
   "${CMD[@]}" 2>/dev/null | head -n "$MAX_RESULTS"
 
 else
-  # ---- grep fallback (slower but always available) -------------------------
   echo "[WARN] ripgrep (rg) not found — falling back to grep (slower on large repos)." >&2
   echo "[HINT] Install: brew install ripgrep (macOS) | apt install ripgrep (Ubuntu/WSL)" >&2
   echo "" >&2
