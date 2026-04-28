@@ -1,389 +1,104 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Claude_Code-Plugin-blueviolet?style=for-the-badge&logo=anthropic" alt="Claude Code Plugin" />
-  <img src="https://img.shields.io/badge/Liferay_DXP-2024.q+-%230B63CE?style=for-the-badge&logo=liferay" alt="Liferay DXP" />
-  <img src="https://img.shields.io/badge/version-0.1.0-blue?style=for-the-badge" alt="Version" />
-  <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License" />
+  <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version" />
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 </p>
 
 <h1 align="center">Liferay Workspace Claude Plugin</h1>
 
 <p align="center">
   <strong>Set up, manage, and develop in Liferay DXP workspaces with AI-powered slash commands.</strong>
-  <br />
-  Workspace setup, portal source analysis, implementation workflows, and Jira ticket generation — all from your terminal.
-</p>
-
-<p align="center">
-  <a href="#quick-start">Quick Start</a> &middot;
-  <a href="#skills">Skills</a> &middot;
-  <a href="#workflow">Workflow</a> &middot;
-  <a href="#examples">Examples</a> &middot;
-  <a href="#scripts">Scripts</a> &middot;
-  <a href="#contributing">Contributing</a>
 </p>
 
 ---
 
-## Why
-
-Setting up a Liferay DXP workspace involves juggling Docker Compose files, Gradle properties, hotfix management, DXP licenses, portal source builds, and dozens of configuration files across multiple modes. This plugin turns that into a single guided conversation.
-
-Each skill encodes the team's institutional knowledge — version extraction logic, service healthcheck patterns, portal module conventions — so you get a consistent, reproducible setup every time.
+Slash commands for Liferay DXP workspaces: Docker/source setup, hotfixes, licenses, portal source search, and Jira/PR workflows.
 
 ---
+
+## Install
+
+```bash
+# Dev / local install — point Claude Code at the plugin directory
+claude --plugin-dir /path/to/liferay-workspace-claude-plugin
+```
+
+For a persistent install via marketplace:
+
+```bash
+/plugin marketplace add /path/to/parent-directory
+/plugin install liferay-workspace-claude-plugin@<marketplace-name>
+```
 
 ## Quick Start
 
-**Install the plugin into your Liferay Workspace project:**
-
-```bash
-# From your Liferay Workspace root directory
-claude plugin add /path/to/liferay-workspace-claude-plugin
-```
-
-**Run your first command:**
+From your Liferay Workspace root:
 
 ```
 /liferay-workspace:setup
 ```
 
-That's it. The setup wizard walks you through everything.
+The wizard walks you through Docker- or source-mode setup, generates `.liferay-workspace.json`, and brings the stack up. Run `/liferay-workspace:doctor` afterwards to verify health.
 
 ---
 
 ## Skills
 
-### Workspace Management
-
-| Skill | Command | Description |
-|-------|---------|-------------|
-| **Setup** | `/liferay-workspace:setup [source]` | Interactive workspace configuration wizard — Docker or source mode |
-| **Setup Source** | `/liferay-workspace:setup-source` | Clone and build `liferay-portal-ee` from source |
-| **Doctor** | `/liferay-workspace:doctor` | Prerequisite checks and running service health dashboard |
-| **Clean** | `/liferay-workspace:clean` | Remove containers, build artifacts, and bundle data |
-| **Core** | `/liferay-workspace:core <mode> <query>` | Deep analysis of portal source code (root-cause & guide modes) |
-
-### Development Workflow
-
-| Skill | Command | Description |
-|-------|---------|-------------|
-| **Plan** | `/liferay-workspace:plan <ticket or description>` | Create an implementation plan — affected modules, steps, testing strategy, and risks |
-| **Implement** | `/liferay-workspace:implement <ticket or description>` | Implement a feature or fix based on a plan or ticket description |
-| **Commit** | `/liferay-workspace:commit [TICKET-000] [description]` | Create a git commit following `TICKET-000 Imperative verb description` convention |
-| **PR** | `/liferay-workspace:pr [TICKET-000]` | Create a GitHub pull request with Jira ticket link and structured description |
-
-### Jira Tickets
-
-| Skill | Command | Description |
-|-------|---------|-------------|
-| **Bug** | `/liferay-workspace:bug <summary>` | Generate a Jira bug report with steps to reproduce, Liferay version, actual/expected results |
-| **Feature Request** | `/liferay-workspace:feature-request <summary>` | Generate a Jira feature request with assumptions and acceptance criteria |
+| Category | Skill | Description |
+|---|---|---|
+| Workspace | `/liferay-workspace:setup [source]` | Interactive workspace configuration wizard — Docker or source mode |
+| Workspace | `/liferay-workspace:setup-source` | Write source-mode config files (`docker-compose.source.yml`, `.env.source`, portal env props) |
+| Workspace | `/liferay-workspace:doctor` | Prerequisite checks and running-service health dashboard |
+| Workspace | `/liferay-workspace:clean` | Remove containers, build artifacts, and bundle data |
+| Workspace | `/liferay-workspace:core <mode> <query>` | Portal source analysis — `root-cause` or `guide` modes |
+| Dev | `/liferay-workspace:plan <ticket\|description>` | Implementation plan — affected modules, steps, testing, risks |
+| Dev | `/liferay-workspace:implement <ticket\|description>` | Implement a feature or fix from a plan or description |
+| Dev | `/liferay-workspace:commit [TICKET-000] [description]` | Git commit following `TICKET-000 Imperative verb description` convention |
+| Dev | `/liferay-workspace:pr [TICKET-000]` | GitHub PR with Jira link and structured description |
+| Jira | `/liferay-workspace:bug <summary>` | File a Jira bug with steps, version, actual/expected results |
+| Jira | `/liferay-workspace:feature-request <summary>` | File a Jira feature request with assumptions and acceptance criteria |
 
 ---
 
 ## Workflow
 
-The skills are designed to work together in a natural development lifecycle:
+The natural development chain:
 
 ```
-  Doctor               Setup               Clean
-  ┌─────────┐     ┌──────────────┐     ┌─────────┐
-  │ Check    │────▶│ Configure    │────▶│ Reset    │
-  │ prereqs  │     │ workspace    │     │ state    │
-  └─────────┘     └──────┬───────┘     └─────────┘
-                         │
-              ┌──────────┴──────────┐
-              ▼                     ▼
-        Docker Mode           Source Mode
-     ┌──────────────┐     ┌──────────────┐
-     │ Generate      │     │ Clone portal │
-     │ compose.yml   │     │ Build source │
-     │ Start all     │     │ Start deps   │
-     └──────────────┘     └──────────────┘
-              │                     │
-              └──────────┬──────────┘
-                         ▼
-  Bug / Feature     ┌──────────┐     Plan
-  ┌──────────┐      │  Core    │     ┌──────────┐
-  │ Create   │      │ Analyze  │────▶│ Design   │
-  │ tickets  │      │ source   │     │ approach │
-  └──────────┘      └──────────┘     └────┬─────┘
-                                          │
-                                          ▼
-                    Implement         Commit            PR
-                    ┌──────────┐     ┌──────────┐     ┌──────────┐
-                    │ Build &  │────▶│ Stage &  │────▶│ Push &   │
-                    │ deploy   │     │ commit   │     │ open PR  │
-                    └──────────┘     └──────────┘     └──────────┘
+setup → doctor → plan → implement → commit → pr
 ```
 
-- **`setup`** orchestrates the entire flow — it calls `doctor` and `clean` automatically before configuring.
-- **`setup-source`** is invoked by `setup` when source mode is selected.
-- **`core`** works independently for portal source code investigation at any time.
-- **`bug`** / **`feature-request`** generate structured Jira tickets.
-- **`plan`** → **`implement`** → **`commit`** → **`pr`** is the development workflow chain.
+`core` is invoked on demand for portal-source analysis; `bug` and `feature-request` file Jira tickets independent of the chain.
 
----
+<details>
+<summary><strong>Cross-skill call graph</strong></summary>
 
-## Examples
-
-### Setting up a Docker workspace
-
-```
-> /liferay-workspace:setup
-
-┌─────────────────────────────────────────────────┐
-│ Liferay Workspace Setup                         │
-├──────────────┬──────────────────────────────────┤
-│ Mode         │ Docker                           │
-│ Bundle cache │ ~/.liferay/liferay-binaries-...  │
-│ Hotfix       │ liferay-dxp-2026.q1.2-hf-1.zip  │
-│ DXP License  │ activation-key-enterprise.xml    │
-└──────────────┴──────────────────────────────────┘
-
-Type a setting name to change it, or "ok" to continue.
-
-> ok
-
-Select services:
-  [x] 1. Liferay      — DXP container (required)
-  [x] 2. DB           — PostgreSQL 16
-  [x] 3. Search       — Elasticsearch
-  [x] 4. Mail         — Mailhog
-  [ ] 5. ServiceNow   — Mock server
-
-✓ docker-compose.yml generated
-✓ .liferay-workspace.json written
-✓ Modules deployed
-✓ Services started
-✓ DXP license applied
-
-Liferay DXP 2026.q1.2 is running at http://localhost:8080
+```mermaid
+flowchart LR
+    setup --> doctor
+    setup --> clean
+    setup -->|source mode| setup-source
+    plan --> core
+    implement --> core
+    implement --> commit --> pr
+    bug -.-> pr
+    feature-request -.-> pr
 ```
 
-### Setting up from source
-
-```
-> /liferay-workspace:setup source
-
-# Same interactive setup, plus:
-✓ liferay-portal-ee cloned at abc123d
-✓ Portal built (took 42 minutes)
-✓ Source configs written
-✓ Supporting services started (DB, Search, Mail)
-
-Liferay DXP (source) running at http://localhost:8080
-```
-
-### Checking workspace health
-
-```
-> /liferay-workspace:doctor
-
-Prerequisites
-  ✓ JDK 21.0.2
-  ✓ Docker 27.5.1
-
-Workspace
-  Mode: Docker | Version: 2026.q1.2 | Hotfix: hf-1
-
-Services
-  ✓ lr       — Up (healthy) → http://localhost:8080
-  ✓ db       — Up (healthy) → localhost:5432
-  ✓ search   — Up (healthy) → http://localhost:9200
-  ✓ mail     — Up (healthy) → http://localhost:8025
-```
-
-### Investigating a bug in portal source
-
-```
-> /liferay-workspace:core root-cause NPE in JournalArticleLocalServiceImpl when approving articles with null display date
-
-Searching portal source...
-  → Found JournalArticleLocalServiceImpl in modules/apps/journal/journal-service
-  → Located updateStatus() method at line 4521
-  → displayDate accessed without null check after workflow transition
-
-Root Cause: When an article is approved via workflow, updateStatus()
-reads displayDate from the article's current version. If the article
-was created via Headless API without a displayDate, the field is null,
-and the subsequent Calendar conversion at line 4538 throws NPE.
-
-Module: journal-service
-File: JournalArticleLocalServiceImpl.java:4538
-Fix: Add null guard before Calendar.getInstance() conversion.
-```
-
-### Learning how to use a feature
-
-```
-> /liferay-workspace:core guide batch engine client extensions for importing object definitions
-
-Searching portal source...
-  → Found batch-engine modules in modules/apps/batch-engine
-  → Reading BatchEngineImportTaskResource API
-  → Found sample client extensions in workspaces/
-
-Usage Guide:
-  1. Create a batch client extension with client-extension.yaml
-  2. Define your object schema in batch/*.json files
-  3. Configure import strategy in batch-engine-data.json
-  ...
-  [complete guide with code snippets derived from source]
-```
-
-### Planning and implementing a feature
-
-```
-> /liferay-workspace:plan LPD-12345 Add custom field validation for object definitions
-
-Implementation Plan
-===================
-Ticket:      LPD-12345
-Summary:     Add custom field validation for object definitions
-Complexity:  Medium
-
-Affected Modules:
-  - modules/objects/objects-validation — new validation logic
-  - modules/objects/objects-web — UI for validation rules
-
-Steps:
-  1. Create ObjectFieldValidationImpl in objects-validation
-  2. Register OSGi component with @Component annotation
-  3. Add validation rule configuration UI in objects-web
-  4. Write integration tests
-
-Ready to proceed, or any adjustments?
-```
-
-```
-> /liferay-workspace:implement LPD-12345
-
-# Implements the plan, builds, and deploys
-✓ ObjectFieldValidationImpl.java created
-✓ Validation UI component added
-✓ Build passed
-✓ Deployed to bundles/deploy
-
-Next: run /commit to commit, then /pr to open a pull request.
-```
-
-### Committing and creating a PR
-
-```
-> /liferay-workspace:commit LPD-12345 Add custom field validation for object definitions
-
-✓ 4 files staged
-✓ Created: LPD-12345 Add custom field validation for object definitions
-```
-
-```
-> /liferay-workspace:pr LPD-12345
-
-Pull Request Created
-====================
-PR:       https://github.com/org/repo/pull/42
-Ticket:   https://liferay.atlassian.net/browse/LPD-12345
-Title:    LPD-12345 Add custom field validation for object definitions
-Base:     main
-Commits:  1
-```
-
-### Filing a bug report
-
-```
-> /liferay-workspace:bug NPE when approving journal articles with null display date
-
-Bug Report
-==========
-Summary:     NPE when approving journal articles with null display date
-Component:   Journal
-Affects:     Liferay DXP 2026.q1.2
-Severity:    Major
-
-Steps to Reproduce:
-  1. Create a journal article via Headless API without displayDate
-  2. Submit for workflow approval
-  3. Approve the article
-
-Actual Result:   NullPointerException at JournalArticleLocalServiceImpl:4538
-Expected Result: Article approved successfully with default display date
-
-Anything to adjust before filing?
-```
-
-### Cleaning the workspace
-
-```
-> /liferay-workspace:clean
-
-Select items to clean:
-  [x] 1. Docker      — stop containers, remove orphans
-  [x] 2. Bundles     — remove data, deploy, logs, osgi, esdata
-  [x] 3. Build       — remove node_modules, dist, build dirs
-  [ ] 4. Portal home — kill processes, delete bundles (source mode)
-
-  ✓ Docker containers stopped
-  ✓ Bundle data removed
-  ✓ Build artifacts cleaned
-```
+</details>
 
 ---
 
 ## Prerequisites
 
 | Requirement | Version | Notes |
-|-------------|---------|-------|
+|---|---|---|
 | **JDK** | 17 – 23 | Required for all modes |
 | **Docker** | Any recent | Required for containerized services |
-| **Apache Ant** | Any | Source mode only |
-| **ripgrep (`rg`)** | Any | Required for `core` skill portal searches |
+| **jq** | Any | Required for hotfix metadata parsing |
+| **Apache Ant** | Any | Source mode only (used by `ant setup-profile-dxp && ant all`) |
+| **ripgrep (`rg`)** | Any | Recommended for `core` skill — falls back to `grep` if missing |
 
 Run `/liferay-workspace:doctor` to verify your environment.
-
----
-
-## Project Structure
-
-```
-liferay-workspace-claude-plugin/
-├── .claude-plugin/
-│   └── plugin.json              # Plugin metadata (name, version)
-├── skills/
-│   ├── core/
-│   │   ├── SKILL.md             # Portal source analysis skill
-│   │   └── liferay-patterns.md  # Module conventions & search strategies
-│   ├── setup/
-│   │   └── SKILL.md             # Interactive workspace setup wizard
-│   ├── setup-source/
-│   │   └── SKILL.md             # Source mode clone & build
-│   ├── doctor/
-│   │   └── SKILL.md             # Prerequisite checks & health dashboard
-│   ├── clean/
-│   │   └── SKILL.md             # Artifact cleanup
-│   ├── plan/
-│   │   └── SKILL.md             # Implementation planning
-│   ├── implement/
-│   │   └── SKILL.md             # Feature/fix implementation
-│   ├── commit/
-│   │   └── SKILL.md             # Git commit with ticket convention
-│   ├── pr/
-│   │   └── SKILL.md             # GitHub pull request creation
-│   ├── bug/
-│   │   └── SKILL.md             # Jira bug report generator
-│   └── feature-request/
-│       └── SKILL.md             # Jira feature request generator
-├── scripts/
-│   ├── rg-liferay.sh            # Fast portal source search
-│   ├── clone_portal.sh          # Clone liferay-portal-ee
-│   ├── build_portal.sh          # Build portal from source
-│   ├── setup_env.sh             # Generate .env with version info
-│   ├── start_source.sh          # Start source mode services
-│   └── clean.sh                 # Cleanup script
-└── claude-docs/
-    ├── create-plugins.md        # Plugin development guide
-    └── extend-claude-with-skills.md  # Skill authoring docs
-```
 
 ---
 
@@ -423,30 +138,26 @@ The plugin generates a `.liferay-workspace.json` file in your workspace root dur
 
 ## Scripts
 
-All scripts live in `scripts/` and are called by the skills automatically. They can also be run directly:
+The skills shell out to two user-facing scripts in `scripts/`. Files prefixed with `_` (`_helpers.sh`, `_logging.sh`, `_prereqs.sh`, `_steps.sh`) are sourced helpers, not entry points.
 
 | Script | Usage | Description |
 |--------|-------|-------------|
-| `rg-liferay.sh` | `bash scripts/rg-liferay.sh -t java -m journal "updateStatus"` | Search portal source by type, module, or pattern |
-| `clone_portal.sh` | `bash scripts/clone_portal.sh <source> <cache> <ref>` | Clone portal-ee and binary cache at a specific ref |
-| `build_portal.sh` | `bash scripts/build_portal.sh <source>` | Build portal with `ant setup-profile-dxp && ant all` |
-| `setup_env.sh` | `bash scripts/setup_env.sh` | Generate `.env` with UID/GID and LIFERAY_VERSION |
-| `start_source.sh` | `bash scripts/start_source.sh` | Start supporting services for source mode |
-| `clean.sh` | `bash scripts/clean.sh --docker --bundles --build` | Clean containers, data, and build artifacts |
+| `local_setup.sh` | `bash scripts/local_setup.sh [all\|up\|prereqs\|clean\|build\|start\|stop\|license] [--source]` | Main lifecycle script — `all` runs prereqs → setup_env → clean → build → start → license; `up` skips clean. `--source` switches to source mode (requires `.env.source`). |
+| `rg-liferay.sh` | `bash scripts/rg-liferay.sh -t java -m journal "updateStatus"` | Fast portal source search. Pattern is the last argument. |
 
 <details>
 <summary><strong>rg-liferay.sh options</strong></summary>
 
 | Flag | Description |
 |------|-------------|
-| `-d <dir>` | Scope search to a directory |
-| `-t <type>` | File type filter: `java`, `xml`, `jsp`, `js`, `properties`, `gradle`, `bnd`, `yaml` |
-| `-m <module>` | Scope to a specific module name |
+| `-d <dir>` | Search root (default: current directory) |
+| `-t <type>` | File type filter: `java`, `xml`, `jsp`, `js`, `properties`, `gradle`, `bnd`, `ftl`, `css`, `yaml` |
+| `-m <module>` | Restrict to a specific module path (e.g. `portal-kernel`, `modules/apps/journal`) |
 | `-l` | List matching files only (no content) |
-| `-n <limit>` | Limit number of results |
+| `-n <limit>` | Max results (default: 40) |
 | `-i` | Case-insensitive search |
-| `-w` | Whole word matching |
-| `-C <lines>` | Context lines around matches |
+| `-w` | Whole-word matching |
+| `-C <lines>` | Context lines around each match (default: 2) |
 
 </details>
 
@@ -464,20 +175,241 @@ All scripts live in `scripts/` and are called by the skills automatically. They 
 
 ---
 
-## Contributing
+## Examples
 
-Contributions are welcome! Here's how the plugin is structured:
+<details>
+<summary><strong>Setting up a Docker workspace</strong></summary>
 
-- **Skills** are defined in `skills/<name>/SKILL.md` using Claude Code's skill format
-- **Scripts** in `scripts/` handle the actual system operations
-- **Documentation** in `claude-docs/` provides reference material for skill development
+```
+> /liferay-workspace:setup
 
-To add a new skill:
-1. Create a new directory under `skills/`
-2. Add a `SKILL.md` following the [skill authoring guide](claude-docs/extend-claude-with-skills.md)
-3. Reference any helper scripts in `scripts/`
+┌─────────────────────────────────────────────────┐
+│ Liferay Workspace Setup                         │
+├──────────────┬──────────────────────────────────┤
+│ Mode         │ Docker                           │
+│ Bundle cache │ ~/.liferay/liferay-binaries-...  │
+│ Hotfix       │ liferay-dxp-2026.q1.2-hf-1.zip  │
+│ DXP License  │ activation-key-enterprise.xml    │
+└──────────────┴──────────────────────────────────┘
+
+Type a setting name to change it, or "ok" to continue.
+
+> ok
+
+Select services:
+  [x] 1. Liferay      — DXP container (required)
+  [x] 2. DB           — PostgreSQL 16
+  [x] 3. Search       — Elasticsearch
+  [x] 4. Mail         — Mailhog
+  [ ] 5. ServiceNow   — Mock server
+
+✓ docker-compose.yml generated
+✓ .liferay-workspace.json written
+✓ Modules deployed
+✓ Services started
+✓ DXP license applied
+
+Liferay DXP 2026.q1.2 is running at http://localhost:8080
+```
+
+</details>
+
+<details>
+<summary><strong>Setting up from source</strong></summary>
+
+```
+> /liferay-workspace:setup source
+
+# Same interactive setup, plus:
+✓ liferay-portal-ee cloned at abc123d
+✓ Portal built (took 42 minutes)
+✓ Source configs written
+✓ Supporting services started (DB, Search, Mail)
+
+Liferay DXP (source) running at http://localhost:8080
+```
+
+</details>
+
+<details>
+<summary><strong>Checking workspace health</strong></summary>
+
+```
+> /liferay-workspace:doctor
+
+Prerequisites
+  ✓ JDK 21.0.2
+  ✓ Docker 27.5.1
+
+Workspace
+  Mode: Docker | Version: 2026.q1.2 | Hotfix: hf-1
+
+Services
+  ✓ lr       — Up (healthy) → http://localhost:8080
+  ✓ db       — Up (healthy) → localhost:5432
+  ✓ search   — Up (healthy) → http://localhost:9200
+  ✓ mail     — Up (healthy) → http://localhost:8025
+```
+
+</details>
+
+<details>
+<summary><strong>Investigating a bug in portal source</strong></summary>
+
+```
+> /liferay-workspace:core root-cause NPE in JournalArticleLocalServiceImpl when approving articles with null display date
+
+Searching portal source...
+  → Found JournalArticleLocalServiceImpl in modules/apps/journal/journal-service
+  → Located updateStatus() method at line 4521
+  → displayDate accessed without null check after workflow transition
+
+Root Cause: When an article is approved via workflow, updateStatus()
+reads displayDate from the article's current version. If the article
+was created via Headless API without a displayDate, the field is null,
+and the subsequent Calendar conversion at line 4538 throws NPE.
+
+Module: journal-service
+File: JournalArticleLocalServiceImpl.java:4538
+Fix: Add null guard before Calendar.getInstance() conversion.
+```
+
+</details>
+
+<details>
+<summary><strong>Learning how to use a feature</strong></summary>
+
+```
+> /liferay-workspace:core guide batch engine client extensions for importing object definitions
+
+Searching portal source...
+  → Found batch-engine modules in modules/apps/batch-engine
+  → Reading BatchEngineImportTaskResource API
+  → Found sample client extensions in workspaces/
+
+Usage Guide:
+  1. Create a batch client extension with client-extension.yaml
+  2. Define your object schema in batch/*.json files
+  3. Configure import strategy in batch-engine-data.json
+  ...
+  [complete guide with code snippets derived from source]
+```
+
+</details>
+
+<details>
+<summary><strong>Planning and implementing a feature</strong></summary>
+
+```
+> /liferay-workspace:plan LPD-12345 Add custom field validation for object definitions
+
+Implementation Plan
+===================
+Ticket:      LPD-12345
+Summary:     Add custom field validation for object definitions
+Complexity:  Medium
+
+Affected Modules:
+  - modules/objects/objects-validation — new validation logic
+  - modules/objects/objects-web — UI for validation rules
+
+Steps:
+  1. Create ObjectFieldValidationImpl in objects-validation
+  2. Register OSGi component with @Component annotation
+  3. Add validation rule configuration UI in objects-web
+  4. Write integration tests
+
+Ready to proceed, or any adjustments?
+```
+
+```
+> /liferay-workspace:implement LPD-12345
+
+# Implements the plan, builds, and deploys
+✓ ObjectFieldValidationImpl.java created
+✓ Validation UI component added
+✓ Build passed
+✓ Deployed to bundles/deploy
+
+Next: run /commit to commit, then /pr to open a pull request.
+```
+
+</details>
+
+<details>
+<summary><strong>Committing and creating a PR</strong></summary>
+
+```
+> /liferay-workspace:commit LPD-12345 Add custom field validation for object definitions
+
+✓ 4 files staged
+✓ Created: LPD-12345 Add custom field validation for object definitions
+```
+
+```
+> /liferay-workspace:pr LPD-12345
+
+Pull Request Created
+====================
+PR:       https://github.com/org/repo/pull/42
+Ticket:   https://liferay.atlassian.net/browse/LPD-12345
+Title:    LPD-12345 Add custom field validation for object definitions
+Base:     main
+Commits:  1
+```
+
+</details>
+
+<details>
+<summary><strong>Filing a bug report</strong></summary>
+
+```
+> /liferay-workspace:bug NPE when approving journal articles with null display date
+
+Bug Report
+==========
+Summary:     NPE when approving journal articles with null display date
+Component:   Journal
+Affects:     Liferay DXP 2026.q1.2
+Severity:    Major
+
+Steps to Reproduce:
+  1. Create a journal article via Headless API without displayDate
+  2. Submit for workflow approval
+  3. Approve the article
+
+Actual Result:   NullPointerException at JournalArticleLocalServiceImpl:4538
+Expected Result: Article approved successfully with default display date
+
+Anything to adjust before filing?
+```
+
+</details>
+
+<details>
+<summary><strong>Cleaning the workspace</strong></summary>
+
+```
+> /liferay-workspace:clean
+
+Select items to clean:
+  [x] 1. Docker      — stop containers, remove orphans
+  [x] 2. Bundles     — remove data, deploy, logs, osgi, esdata
+  [x] 3. Build       — remove node_modules, dist, build dirs
+  [ ] 4. Portal home — kill processes, delete bundles (source mode)
+
+  ✓ Docker containers stopped
+  ✓ Bundle data removed
+  ✓ Build artifacts cleaned
+```
+
+</details>
 
 ---
+
+## Contributing
+
+Skills live under `skills/<name>/SKILL.md` (Claude Code skill format); shared lifecycle logic is in `scripts/`. To add a skill, create the directory, write `SKILL.md`, and shell out to scripts as needed. See [`claude-docs/extend-claude-with-skills.md`](claude-docs/extend-claude-with-skills.md) for the authoring guide.
 
 ## License
 
