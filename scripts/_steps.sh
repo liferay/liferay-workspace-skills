@@ -161,7 +161,7 @@ _resolve_license_path() {
 
 	if [ -f "$config" ]; then
 		local from_config
-		from_config=$(python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('paths',{}).get('license',''))" < "$config" 2>/dev/null || true)
+		from_config=$(jq -r '.paths.license // ""' "$config" 2>/dev/null || true)
 
 		if [ -n "$from_config" ] && [ -f "$from_config" ]; then
 			echo "$from_config"

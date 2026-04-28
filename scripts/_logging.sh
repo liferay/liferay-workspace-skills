@@ -2,12 +2,24 @@
 # Logging utilities — sourced by local_setup.sh.
 # Strict mode (set -euo pipefail) is set once in the entry script.
 
-BOLD='\033[1m'
-CYAN='\033[36m'
-YELLOW='\033[33m'
-GREEN='\033[32m'
-DIM='\033[2m'
-RESET='\033[0m'
+# Disable color when piped (stdout not a TTY) or when NO_COLOR is set
+# (https://no-color.org). $'...' (ANSI-C quoting) embeds the raw ESC byte so
+# the strings render correctly with both `printf '%s'` and `echo -e`.
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+	BOLD=$'\033[1m'
+	CYAN=$'\033[36m'
+	YELLOW=$'\033[33m'
+	GREEN=$'\033[32m'
+	DIM=$'\033[2m'
+	RESET=$'\033[0m'
+else
+	BOLD=''
+	CYAN=''
+	YELLOW=''
+	GREEN=''
+	DIM=''
+	RESET=''
+fi
 
 SETUP_START_TIME=$SECONDS
 STEP_START_TIME=$SECONDS

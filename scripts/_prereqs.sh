@@ -4,14 +4,15 @@
 
 require() {
 	local name="$1"
-	local check="$2"
-	local message="$3"
+	local message="$2"
+	shift 2
+	[ "${1:-}" = "--" ] && shift
 
-	if ! eval "$check" &>/dev/null; then
+	if "$@" &>/dev/null; then
+		echo "  ✓ ${name}"
+	else
 		echo "  ✗ ${name} — ${message}"
 		MISSING_PREREQS=true
-	else
-		echo "  ✓ ${name}"
 	fi
 }
 
@@ -24,7 +25,7 @@ resolve_hotfix_name() {
 			return
 		fi
 
-		python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('env',{}).get('LCP_CI_LIFERAY_DXP_HOTFIXES_COMMON',''))" < "$lcp_json"
+		jq -r '.env.LCP_CI_LIFERAY_DXP_HOTFIXES_COMMON // ""' "$lcp_json"
 	else
 		local bundles_dir="${PORTAL_BUNDLES:-bundles}"
 		local -a hotfix_entries=()
@@ -61,23 +62,20 @@ _hotfix_zip_path() {
 	fi
 }
 
-# Extracts a value from hotfix.json using a dot-separated key path.
+# Extracts a value from hotfix.json using a dot-separated key path. Hyphenated
+# keys (e.g. "build.git-revision") are handled by splitting the path inside jq
+# rather than relying on jq's bareword key syntax.
 # Tries the local hotfix zip first, then falls back to the bundles directory.
 _read_hotfix_json() {
 	local json_path="$1"
-	local python_script='
-import sys, json
-d = json.load(sys.stdin)
-for k in sys.argv[1].split("."):
-    d = d[k]
-print(d)
-'
+	local jq_filter='($path | split(".")) as $p | getpath($p) // ""'
+
 	local zip
 	zip=$(_hotfix_zip_path)
 
 	if [ -n "$zip" ]; then
 		unzip -p "$zip" hotfix.json 2>/dev/null \
-			| python3 -c "$python_script" "$json_path" 2>/dev/null \
+			| jq -r --arg path "$json_path" "$jq_filter" 2>/dev/null \
 			|| true
 		return
 	fi
@@ -93,7 +91,7 @@ print(d)
 		return
 	fi
 
-	python3 -c "$python_script" "$json_path" 2>/dev/null < "${hotfix_jsons[0]}" || true
+	jq -r --arg path "$json_path" "$jq_filter" "${hotfix_jsons[0]}" 2>/dev/null || true
 }
 
 resolve_git_revision()    { _read_hotfix_json "build.git-revision"; }
@@ -179,11 +177,12 @@ step_prereqs() {
 
 	MISSING_PREREQS=false
 
-	require "JDK 17+" "java -version 2>&1 | grep -qE '\"(17|18|19|20|21|22|23)\.'" "JDK 17+ is required"
-	require "Docker" "docker --version" "Docker is required"
+	require "JDK 17+" "JDK 17+ is required" -- bash -c 'java -version 2>&1 | grep -qE "\"(17|18|19|20|21|22|23)\."'
+	require "Docker"  "Docker is required"  -- docker --version
+	require "jq"      "jq is required (brew install jq | apt install jq)" -- jq --version
 
 	if [ "$LIFERAY_MODE" = "source" ]; then
-		require "Apache Ant" "ant -version" "Apache Ant is required for source builds"
+		require "Apache Ant" "Apache Ant is required for source builds" -- ant -version
 
 		step_clone_portal
 		echo "  ✓ Portal home"
