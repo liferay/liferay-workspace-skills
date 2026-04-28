@@ -5,27 +5,49 @@ disable-model-invocation: true
 name: setup
 ---
 
-If invoked with the argument `source`, follow the **Source mode** flow throughout (Steps 1, 3, 5–8). Otherwise follow the **Docker mode** flow (Steps 1, 2, 4, 5, 7–8).
+If invoked with the argument `source`, the **chosen mode** is Source. Otherwise the chosen mode is Docker. The chosen mode determines what gets booted at the end (Step 7), but **all configuration files for both modes are written every run** so the user can flip modes later via `bash scripts/local_setup.sh [--source]` without re-running `/setup`.
 
-Before running any setup steps, execute in order:
+Run all steps in order: 0, 1, 2 (chosen=docker only), 3 (chosen=source only), 4, 5, 6, 7, 8.
+
+Before running the setup steps:
 
 1. Invoke `liferay-workspace:doctor` — if any prerequisite fails, stop and ask the user to fix it before continuing.
-2. Invoke `liferay-workspace:clean` — wait for it to complete before proceeding.
+
+(Cleaning is handled by `scripts/local_setup.sh all` in Step 7 — do not invoke `liferay-workspace:clean` separately unless the user asks for a partial clean with the toggle UI.)
 
 Then guide the user through the setup steps below interactively. Wait for answers at each step before proceeding.
 
 ## General rules
 - Do not create the `bundles` folder, except `bundles/patching-tool/patches/` for copying the Hotfix in Docker mode
+- Steps that write files are idempotent: skip if the target already exists, unless this is a `/setup` reprocess and the file is regenerated (e.g. `scripts/*.sh`)
+
+## Step 0 — Materialize project scripts
+
+Copy the plugin's setup script set into the project so it is runnable without Claude on subsequent invocations:
+
+```bash
+mkdir -p scripts
+cp "${CLAUDE_PLUGIN_ROOT}/scripts/local_setup.sh" \
+   "${CLAUDE_PLUGIN_ROOT}/scripts/_logging.sh" \
+   "${CLAUDE_PLUGIN_ROOT}/scripts/_helpers.sh" \
+   "${CLAUDE_PLUGIN_ROOT}/scripts/_prereqs.sh" \
+   "${CLAUDE_PLUGIN_ROOT}/scripts/_steps.sh" \
+   scripts/
+chmod +x scripts/local_setup.sh
+```
+
+This step always runs, including on `/setup` reprocess, so plugin script fixes propagate. **Local edits to `scripts/*.sh` will be overwritten** — tell the user up front. If `${CLAUDE_PLUGIN_ROOT}` is unset, fail with: "Cannot locate plugin scripts; ensure the plugin is installed via `claude plugin add`."
 
 ## Step 1 — Resources
 
-Collect the following values, then display a summary table and ask: **"Type a setting name to change it, or `ok` to continue:"**
+Collect **all** of the following values regardless of chosen mode (so source-mode switching works later without re-running `/setup`). Display a summary table and ask: **"Type a setting name to change it, or `ok` to continue:"**
 
-- **Mode**: Docker (default) or Source. In Source mode, also ask where to clone `liferay-portal-ee` (default: `../liferay-portal-ee`, use from parent folder)
-- **Bundle cache** (`~/.liferay/liferay-binaries-cache-2020`, use from .liferay folder): default sibling to source
-- **Bundles**: Source mode only (default: `<portal source>/bundles`, matching Ant's build output)
-- **Hotfix**: scan `~/.liferay/hotfixes/` for zips; if multiple found present a numbered list, if none found leave blank
-- **DXP License**: scan `~/.liferay/activation/activation-key-*.xml`; if multiple found present a numbered list, if none found fail with an error
+- **Mode**: Docker (default, can be flipped later via `bash scripts/local_setup.sh --source`) or Source.
+- **Source**: where to clone `liferay-portal-ee` (default: `../liferay-portal-ee`, sibling to the workspace).
+- **Bundle cache** (default `~/.liferay/liferay-binaries-cache-2020`).
+- **Bundles**: source-mode bundles output (default: `<source>/bundles`, matching Ant's build output).
+- **Hotfix**: scan `~/.liferay/hotfixes/` for zips; if multiple found present a numbered list, if none found leave blank.
+- **DXP License**: scan `~/.liferay/activation/activation-key-*.xml`; if multiple found present a numbered list, if none found fail with an error.
 
 Re-display the table after each change until the user types `ok`.
 
@@ -49,7 +71,9 @@ This strips the `dxp-` prefix and any suffix like `-lts`, yielding e.g. `2026.q1
 
 Only ask the user manually if neither source yields a version.
 
-## Step 4 — docker-compose.yml (Docker mode only)
+## Step 4 — docker-compose.yml
+
+Run regardless of chosen mode — Source mode uses the same compose file plus `docker-compose.source.yml` to disable the Liferay container.
 
 Check if `docker-compose.yml` already exists. If it does, skip this step.
 
@@ -101,7 +125,7 @@ search:
     - discovery.type=single-node
     - network.host=_site_
     - node.name=search
-    - node.roles=[master, data, ingest]
+    - node.roles=master,data,ingest
     - xpack.security.enabled=false
   healthcheck:
     test: ["CMD-SHELL", "curl -s http://search:9200/_cluster/health?wait_for_status=green || exit 1"]
@@ -202,51 +226,30 @@ In source mode, also write `gradle-local.properties`:
 liferay.workspace.home.dir=<bundles path>
 ```
 
-## Step 6 — Source Setup (Source mode only)
+## Step 6 — Source Setup
 
-Invoke the `liferay-workspace:setup-source` skill.
+Invoke the `liferay-workspace:setup-source` skill **regardless of chosen mode**. It writes the source-mode config files (`configs/source/portal-env.properties`, `docker-compose.source.yml`, `.env.source`) idempotently. Seeding these in Docker-first installs means the user can later run `bash scripts/local_setup.sh --source` without going back through `/setup`.
+
+The portal clone and `ant all` build are handled by `scripts/local_setup.sh`'s prereq step on the first source-mode boot — do not run them separately.
 
 ## Step 7 — Start up
 
-Run each sub-step in order to start Liferay.
-
-**7a. Environment**
-Generate `.env` from `gradle.properties`:
-```bash
-bash scripts/setup_env.sh
-```
-
-On Linux, also uncomment `user: ${UID}:${GID}` in the `liferay` service of `docker-compose.yml`.
-
-**7b. Build/Deploy**
-
-Check that each directory exists **and** contains a `build.gradle` or `settings.gradle` (an empty directory is not deployable). Run as a single command — skip silently if the check fails:
-
-```bash
-[ -d modules ] && ls modules/*/build.gradle >/dev/null 2>&1 && ./gradlew -p modules deploy; [ -d client-extensions ] && ls client-extensions/*/build.gradle >/dev/null 2>&1 && ./gradlew -p client-extensions deploy; true
-```
-
-**7c. Start services**
+Hand off to `scripts/local_setup.sh`, which runs prereqs, env, clean, build, start, and (Docker mode) license install in sequence — including log waits and port checks.
 
 Docker mode:
 ```bash
-docker compose up -d
+bash scripts/local_setup.sh all
 ```
 
 Source mode:
 ```bash
-bash scripts/start_source.sh
+bash scripts/local_setup.sh all --source
 ```
 
-**7d. License** (use the `license` path from `.liferay-workspace.json`)
+On Linux, before invoking the script in Docker mode, uncomment `user: ${UID}:${GID}` in the `liferay` service of `docker-compose.yml`.
 
-Docker mode:
-```bash
-cp <paths.license> bundles/osgi/modules/
-```
-Wait for `License registered for DXP Development` in `bundles/logs/liferay.*.log`.
+The script reads `paths.license` from `.liferay-workspace.json` (with a fallback glob to `~/.liferay/activation/activation-key-*.xml`). Source mode does **not** install the license inside the script — after the script returns, copy it manually:
 
-Source mode — just copy, do **not** wait for log output:
 ```bash
 source .env.source
 cp <paths.license> "$PORTAL_BUNDLES/osgi/modules/"
@@ -263,4 +266,17 @@ Print a summary table:
   Elements: Liferay, DB, Search, Mail
   URL:      http://localhost:8080
   Mail UI:  http://localhost:8025   (only if Mail element selected)
+```
+
+Then print the AI-free re-run cheat sheet:
+
+```
+  Next time (no AI required):
+    bash scripts/local_setup.sh           # docker mode
+    bash scripts/local_setup.sh --source  # source mode (first run will clone+build)
+    bash scripts/local_setup.sh stop      # stop services
+    bash scripts/local_setup.sh clean     # wipe current mode's bundles only
+
+  Switching modes via the script does NOT clean the other mode's bundles.
+  Re-run /setup to refresh scripts and rebuild from scratch.
 ```

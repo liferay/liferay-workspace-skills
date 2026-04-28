@@ -1,46 +1,16 @@
 ---
-description: Clone and build Liferay Portal from source, then write source-mode config files. Use when the user asks to set up portal source mode, clone liferay-portal, or invokes /setup-source.
+description: Write source-mode config files for a Liferay Workspace (portal-env.properties, docker-compose.source.yml, .env.source). Cloning and building liferay-portal-ee is handled by scripts/local_setup.sh --source. Use when the user asks to set up portal source mode or invokes /setup-source.
 disable-model-invocation: false
 name: setup-source
 ---
 
+Invoked unconditionally by `/setup` (regardless of the user's chosen initial mode) so that `bash scripts/local_setup.sh --source` works later without re-running `/setup`. All file writes are idempotent — skip if the target already exists.
+
 Read `.liferay-workspace.json`. Extract:
 - `paths.source` → `PORTAL_SOURCE` (abs path to liferay-portal-ee clone)
-- `paths.bundleCache` → `BUNDLE_CACHE` (abs path to liferay-binaries-cache-2020)
 - `paths.bundles` → `PORTAL_BUNDLES` (abs path to built portal bundles)
-- `hotfixCommit` → if not null, use as `REF`
-- `version` → if `hotfixCommit` is null, extract the `YYYY.qN.N` part (strip any suffix like `-lts`) and use it directly as `REF` (e.g. `"2026.q1.2-lts"` → `REF=2026.q1.2`)
 
-## Step A — Clone portal
-
-Run: `[ -d "<PORTAL_SOURCE>" ] && echo "EXISTS" || echo "MISSING"`
-
-If EXISTS → report `— already cloned` and skip.
-
-If MISSING → run:
-
-```bash
-bash scripts/clone_portal.sh "<PORTAL_SOURCE>" "<BUNDLE_CACHE>" "<COMMIT>"
-```
-
-Report ✓ done or ✗ failed.
-
-## Step B — Build portal
-
-⚠️ This takes 30–60+ minutes on first run.
-
-Run: `[ -d "<PORTAL_BUNDLES>" ] && echo "EXISTS" || echo "MISSING"`
-
-If EXISTS and invoked standalone → ask: **"Portal bundles already exist at `<PORTAL_BUNDLES>`. Rebuild? (y/N)"** — skip unless the user confirms.
-If EXISTS and invoked from setup → rebuild without asking (clean already ran).
-
-If MISSING or confirmed → run:
-
-```bash
-bash scripts/build_portal.sh "<PORTAL_SOURCE>"
-```
-
-Report ✓ done or — skipped.
+The clone of `liferay-portal-ee` and the `ant all` build are run by `scripts/local_setup.sh --source` (via `step_prereqs`) on the first source-mode boot — do not invoke them from this skill.
 
 ## Step C — Source configs
 
