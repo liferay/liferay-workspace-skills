@@ -150,9 +150,6 @@ wait_for_log() {
 	fifo=$(mktemp -u /tmp/wait_for_log.XXXXXX)
 	mkfifo "$fifo"
 
-	# Trailing `true` keeps the trap's exit status zero so it doesn't trip set -e.
-	trap '[ -n "${log_pid:-}" ] && kill "$log_pid" 2>/dev/null; rm -f "$fifo"; true' RETURN
-
 	if [ "$LIFERAY_MODE" = "source" ]; then
 		local tomcat_dir
 		tomcat_dir=$(find_tomcat_dir)
@@ -160,6 +157,7 @@ wait_for_log() {
 
 		while [ ! -f "$log_file" ]; do
 			if (( SECONDS - start_time >= timeout_seconds )); then
+				rm -f "$fifo"
 				echo "Error: Timed out waiting for ${label} log file to appear."
 				return 1
 			fi
@@ -172,6 +170,10 @@ wait_for_log() {
 		docker compose logs -f liferay --tail 0 > "$fifo" 2>/dev/null &
 		log_pid=$!
 	fi
+
+	# Expand now: locals unbind before the RETURN trap fires under set -u.
+	# shellcheck disable=SC2064
+	trap "kill $log_pid 2>/dev/null; rm -f $fifo; true" RETURN
 
 	while IFS= read -r line; do
 		echo "$line"
