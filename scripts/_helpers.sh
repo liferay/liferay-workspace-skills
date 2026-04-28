@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# General helpers — sourced by local_setup.sh
-
-set -euo pipefail
+# General helpers — sourced by local_setup.sh.
+# Strict mode (set -euo pipefail) is set once in the entry script.
 
 docker_compose_cmd() {
 	if [ "$LIFERAY_MODE" = "source" ]; then
@@ -143,6 +142,7 @@ wait_for_log() {
 	local timeout_seconds="${3:-${WAIT_FOR_LOG_TIMEOUT:-1800}}"
 	local start_time=$SECONDS
 	local found=false
+	local log_pid=""
 
 	echo "Waiting for ${label}..."
 
@@ -152,7 +152,11 @@ wait_for_log() {
 	fifo=$(mktemp -u /tmp/wait_for_log.XXXXXX)
 	mkfifo "$fifo"
 
-	local log_pid
+	# Single cleanup path — fires on every return (success, error, set -e abort).
+	# Replaces the previously duplicated cleanup at each exit point. Trailing
+	# `true` keeps the trap's exit status zero so it doesn't trip set -e.
+	trap '[ -n "${log_pid:-}" ] && kill "$log_pid" 2>/dev/null; rm -f "$fifo"; true' RETURN
+
 	if [ "$LIFERAY_MODE" = "source" ]; then
 		local tomcat_dir
 		tomcat_dir=$(find_tomcat_dir)
@@ -160,7 +164,6 @@ wait_for_log() {
 
 		while [ ! -f "$log_file" ]; do
 			if (( SECONDS - start_time >= timeout_seconds )); then
-				rm -f "$fifo"
 				echo "Error: Timed out waiting for ${label} log file to appear."
 				return 1
 			fi
@@ -185,13 +188,11 @@ wait_for_log() {
 		fi
 	done < "$fifo"
 
-	kill "$log_pid" 2>/dev/null || true
-	rm -f "$fifo"
-
 	if [ "$found" = true ]; then
 		echo "${label} detected"
-	else
-		echo "Error: Timed out after $(format_duration "$timeout_seconds") waiting for '${label}'."
-		return 1
+		return 0
 	fi
+
+	echo "Error: Timed out after $(format_duration "$timeout_seconds") waiting for '${label}'."
+	return 1
 }

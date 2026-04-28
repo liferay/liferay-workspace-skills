@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Prerequisite checks and portal source setup — sourced by local_setup.sh
-
-set -euo pipefail
+# Prerequisite checks and portal source setup — sourced by local_setup.sh.
+# Strict mode (set -euo pipefail) is set once in the entry script.
 
 require() {
 	local name="$1"

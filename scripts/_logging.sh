@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Logging utilities — sourced by local_setup.sh
-
-set -euo pipefail
+# Logging utilities — sourced by local_setup.sh.
+# Strict mode (set -euo pipefail) is set once in the entry script.
 
 BOLD='\033[1m'
 CYAN='\033[36m'

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Setup step functions — sourced by local_setup.sh
-
-set -euo pipefail
+# Setup step functions — sourced by local_setup.sh.
+# Strict mode (set -euo pipefail) is set once in the entry script.
 
 # Log messages the script waits on
 readonly LOG_MARKER_TOMCAT_STARTUP='org.apache.catalina.startup.Catalina.start Server startup'
@@ -74,7 +73,16 @@ step_clean() {
 	else
 		log_cmd rm -rf bundles/data bundles/deploy bundles/logs bundles/osgi bundles/routes bundles/esdata
 	fi
-	log_cmd find . -depth -type d \( -name node_modules_cache -o -name node_modules -o -name dist -o -name build \) -exec rm -rf {} \;
+	# Scope the sweep to known workspace subdirectories so a misinvocation from
+	# the wrong CWD can't recursively delete unrelated build/dist/node_modules trees.
+	local -a clean_targets=()
+	for dir in modules client-extensions; do
+		[ -d "$dir" ] && clean_targets+=("$dir")
+	done
+
+	if [ ${#clean_targets[@]} -gt 0 ]; then
+		log_cmd find "${clean_targets[@]}" -depth -type d \( -name node_modules_cache -o -name node_modules -o -name dist -o -name build \) -exec rm -rf {} \;
+	fi
 }
 
 step_build() {
