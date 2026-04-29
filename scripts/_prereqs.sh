@@ -118,23 +118,47 @@ resolve_product_version_from_gradle() {
 	echo "$product"
 }
 
+readonly LIFERAY_PORTAL_EE_URL="git@github.com:liferay/liferay-portal-ee.git"
+
 _clone_or_update_portal_ee() {
 	local git_revision="$1"
 	local product_version="$2"
+
+	# Set by this function so step_prereqs can decide whether to force a rebuild.
+	# True means the source moved (or was just cloned) and the bundle is stale.
+	PORTAL_SOURCE_UPDATED=false
 
 	if [ -d "$LIFERAY_PORTAL_SOURCE/.git" ]; then
 		local current_commit
 		current_commit=$(git -C "$LIFERAY_PORTAL_SOURCE" rev-parse HEAD 2>/dev/null || echo "")
 
-		if [ -z "$git_revision" ]; then
-			echo "  ✓ liferay-portal-ee already cloned at ${current_commit:0:12} (no hotfix configured)"
-		elif [ "$current_commit" = "$git_revision" ]; then
-			echo "  ✓ liferay-portal-ee already at ${git_revision:0:12}"
-		else
-			log_step "Updating liferay-portal-ee to commit ${git_revision:0:12} (was ${current_commit:0:12})"
+		# Hotfix-specific revision wins over the product version (branch/tag).
+		local target_ref="${git_revision:-$product_version}"
 
-			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" fetch origin "$git_revision" --depth 1
-			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" checkout "$git_revision"
+		# Fetch from the canonical upstream URL rather than `origin`. Users often
+		# repoint origin at a personal fork that lacks upstream tags/branches,
+		# and --single-branch clones restrict origin's fetch refspec.
+		log_cmd git -C "$LIFERAY_PORTAL_SOURCE" fetch "$LIFERAY_PORTAL_EE_URL" "$target_ref" --depth 1
+
+		# ^{commit} dereferences annotated tags to the underlying commit.
+		local target_commit
+		target_commit=$(git -C "$LIFERAY_PORTAL_SOURCE" rev-parse 'FETCH_HEAD^{commit}' 2>/dev/null || echo "")
+
+		if [ -z "$target_commit" ] || [ "$current_commit" = "$target_commit" ]; then
+			echo "  ✓ liferay-portal-ee at ${current_commit:0:12} (${target_ref})"
+		else
+			log_step "Updating liferay-portal-ee to ${target_ref} ${target_commit:0:12} (was ${current_commit:0:12})"
+
+			# `all` sets FORCE_PORTAL_RESET so checkout doesn't fail on tracked-file
+			# modifications left by a prior ant build (bnd.bnd/packageinfo bumps).
+			# `up` leaves the flag unset and aborts on dirty trees, preserving user work.
+			if [ "${FORCE_PORTAL_RESET:-false}" = true ]; then
+				log_warn "Discarding local modifications in $LIFERAY_PORTAL_SOURCE (all --source)."
+				log_cmd git -C "$LIFERAY_PORTAL_SOURCE" reset --hard
+			fi
+
+			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" checkout "$target_commit"
+			PORTAL_SOURCE_UPDATED=true
 		fi
 	else
 		if [ -n "$git_revision" ]; then
@@ -144,12 +168,14 @@ _clone_or_update_portal_ee() {
 		fi
 
 		log_cmd git clone --depth 1 --single-branch --branch "$product_version" \
-			git@github.com:liferay/liferay-portal-ee.git "$LIFERAY_PORTAL_SOURCE"
+			"$LIFERAY_PORTAL_EE_URL" "$LIFERAY_PORTAL_SOURCE"
 
 		if [ -n "$git_revision" ]; then
-			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" fetch origin "$git_revision" --depth 1
+			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" fetch "$LIFERAY_PORTAL_EE_URL" "$git_revision" --depth 1
 			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" checkout "$git_revision"
 		fi
+
+		PORTAL_SOURCE_UPDATED=true
 	fi
 }
 
@@ -229,15 +255,33 @@ step_prereqs() {
 			portal_osgi_ok=true
 		fi
 
+		local rebuild_reason=""
+
 		if [ -z "$tomcat_dir" ] || [ ! -f "$tomcat_dir/bin/catalina.sh" ] || [ "$portal_osgi_ok" = false ]; then
-			echo "  ✗ Portal bundles — missing Tomcat or core OSGi bundles in $PORTAL_BUNDLES"
+			rebuild_reason="missing Tomcat or core OSGi bundles in $PORTAL_BUNDLES"
+		elif [ "${PORTAL_SOURCE_UPDATED:-false}" = true ]; then
+			rebuild_reason="liferay-portal-ee source updated — bundle is stale"
+		fi
+
+		if [ -n "$rebuild_reason" ]; then
+			echo "  ✗ Portal bundles — $rebuild_reason"
 			echo ""
 			echo "  Building portal from source..."
 			step_build_portal
-			echo "  ✓ Portal bundles"
-		else
-			echo "  ✓ Portal bundles"
+
+			# Re-check: ant honors app.server.${user}.properties' app.server.parent.dir,
+			# which can write the bundle somewhere other than $PORTAL_BUNDLES. Catch
+			# that mismatch here instead of failing 4+ minutes later in step_start.
+			tomcat_dir=$(find_tomcat_dir 2>/dev/null || echo "")
+
+			if [ -z "$tomcat_dir" ] || [ ! -f "$tomcat_dir/bin/catalina.sh" ]; then
+				log_error "Build finished but no tomcat-* found in $PORTAL_BUNDLES."
+				log_error "Check app.server.\${user}.properties' app.server.parent.dir against paths.bundles in .liferay-workspace.json."
+				exit 1
+			fi
 		fi
+
+		echo "  ✓ Portal bundles"
 	fi
 
 	if [ "$MISSING_PREREQS" = true ]; then

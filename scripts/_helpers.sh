@@ -86,15 +86,21 @@ detect_mode() {
 	done
 
 	if [ "$LIFERAY_MODE" = "source" ]; then
-		if [ ! -f ".env.source" ]; then
-			log_error ".env.source not found. Copy .env.source.example and configure paths."
+		if [ ! -f ".liferay-workspace.json" ]; then
+			log_error ".liferay-workspace.json not found. Run /setup to generate it."
 			exit 1
 		fi
 
-		# shellcheck disable=SC1091
-		source .env.source
+		LIFERAY_PORTAL_SOURCE=$(jq -r '.paths.source // ""' .liferay-workspace.json)
+		LIFERAY_PORTAL_BUNDLES=$(jq -r '.paths.bundles // ""' .liferay-workspace.json)
 
-		PORTAL_BUNDLES="${LIFERAY_PORTAL_BUNDLES:-${LIFERAY_PORTAL_SOURCE}/bundles}"
+		if [ -z "$LIFERAY_PORTAL_SOURCE" ]; then
+			log_error ".liferay-workspace.json missing paths.source — run /setup or fix it manually."
+			exit 1
+		fi
+
+		# Default matches ant's app.server.parent.dir (../bundles relative to source).
+		PORTAL_BUNDLES="${LIFERAY_PORTAL_BUNDLES:-$(dirname "$LIFERAY_PORTAL_SOURCE")/bundles}"
 
 		echo "liferay.workspace.home.dir=$PORTAL_BUNDLES" > gradle-local.properties
 	else

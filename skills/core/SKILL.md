@@ -18,9 +18,8 @@ For detailed Liferay source structure, module conventions, and search strategies
 Determine the portal source directory. Check in order:
 
 1. Read `.liferay-workspace.json` — use `paths.source`
-2. Read `.env.source` — use `LIFERAY_PORTAL_SOURCE`
-3. Check if `../liferay-portal-ee` or `../liferay-portal` exists
-4. Ask the user for the path
+2. Check if `../liferay-portal-ee` or `../liferay-portal` exists
+3. Ask the user for the path
 
 Store the resolved path as `$PORTAL_SRC` for all subsequent steps.
 

@@ -1,5 +1,5 @@
 ---
-allowed-tools: Read Bash(java *) Bash(docker *) Bash(ant *) Bash(cat *) Bash(ls *)
+allowed-tools: Read Bash(java *) Bash(docker *) Bash(ant *) Bash(cat *) Bash(ls *) Bash(jq *)
 description: Check Liferay Workspace prerequisites (JDK 17–23, Docker) and show a health summary of running services. Use when the user asks about workspace health, prerequisites, or invokes /doctor.
 disable-model-invocation: false
 name: doctor
@@ -10,7 +10,7 @@ name: doctor
 Run all checks in a **single** Bash call, then report each item as ✓ or ✗. For failures, include the install hint.
 
 ```bash
-echo "---JAVA---" && java -version 2>&1; echo "---DOCKER---" && docker --version 2>&1; echo "---ANT---" && ant -version 2>&1; echo "---SOURCE---" && ([ -f .env.source ] && echo "SOURCE_MODE=true" || echo "SOURCE_MODE=false")
+echo "---JAVA---" && java -version 2>&1; echo "---DOCKER---" && docker --version 2>&1; echo "---ANT---" && ant -version 2>&1; echo "---SOURCE---" && ([ -f .liferay-workspace.json ] && echo "SOURCE_MODE=$(jq -r '.mode == "source"' .liferay-workspace.json)" || echo "SOURCE_MODE=false")
 ```
 
 **Pass criteria:**

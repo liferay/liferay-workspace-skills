@@ -42,8 +42,8 @@ usage() {
 	echo ""
 	echo "Flags:"
 	echo "  --source  Use locally-built source portal instead of Docker image"
-	echo "            Requires .env.source with LIFERAY_PORTAL_SOURCE set."
-	echo "            Run /setup (or skills/setup-source) to generate it."
+	echo "            Requires .liferay-workspace.json with paths.source set."
+	echo "            Run /setup to generate it."
 	echo ""
 	echo "Switching modes via 'up' (the default) does NOT clean the other mode's"
 	echo "bundles. Re-run /setup to refresh scripts and rebuild from scratch."
@@ -66,6 +66,10 @@ case "$command" in
 		run_up
 		;;
 	all)
+		# all is the full-reset path — let prereqs discard local modifications in
+		# the portal source (e.g. ant's bnd.bnd/packageinfo bumps) when switching
+		# versions. `up` leaves this unset and preserves user work.
+		export FORCE_PORTAL_RESET=true
 		step_prereqs
 		step_setup_env
 		step_clean

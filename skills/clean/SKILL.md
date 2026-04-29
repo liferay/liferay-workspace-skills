@@ -19,7 +19,7 @@ Otherwise, show the following selection and ask: **"Type numbers to toggle (e.g.
 
 Update the selection based on the user's response, then re-display and ask again until the user types `ok`.
 
-Detect mode from `.env.source` — if it exists, pass `--source` to the script.
+Detect mode from `.liferay-workspace.json` (`jq -r '.mode' .liferay-workspace.json`) — if `source`, pass `--source` to the script.
 
 If items 1+2+3 are confirmed (the default), run:
 

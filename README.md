@@ -46,7 +46,7 @@ The wizard walks you through Docker- or source-mode setup, generates `.liferay-w
 | Category | Skill | Description |
 |---|---|---|
 | Workspace | `/liferay-workspace:setup [source]` | Interactive workspace configuration wizard — Docker or source mode |
-| Workspace | `/liferay-workspace:setup-source` | Write source-mode config files (`docker-compose.source.yml`, `.env.source`, portal env props) |
+| Workspace | `/liferay-workspace:setup-source` | Write source-mode config files (`docker-compose.source.yml`, portal env props) |
 | Workspace | `/liferay-workspace:doctor` | Prerequisite checks and running-service health dashboard |
 | Workspace | `/liferay-workspace:clean` | Remove containers, build artifacts, and bundle data |
 | Workspace | `/liferay-workspace:core <mode> <query>` | Portal source analysis — `root-cause` or `guide` modes |
@@ -142,7 +142,7 @@ The skills shell out to two user-facing scripts in `scripts/`. Files prefixed wi
 
 | Script | Usage | Description |
 |--------|-------|-------------|
-| `local_setup.sh` | `bash scripts/local_setup.sh [all\|up\|prereqs\|clean\|build\|start\|stop\|license] [--source]` | Main lifecycle script — `all` runs prereqs → setup_env → clean → build → start → license; `up` skips clean. `--source` switches to source mode (requires `.env.source`). |
+| `local_setup.sh` | `bash scripts/local_setup.sh [all\|up\|prereqs\|clean\|build\|start\|stop\|license] [--source]` | Main lifecycle script — `all` runs prereqs → setup_env → clean → build → start → license; `up` skips clean. `--source` switches to source mode (reads `paths.source`/`paths.bundles` from `.liferay-workspace.json`). |
 | `rg-liferay.sh` | `bash scripts/rg-liferay.sh -t java -m journal "updateStatus"` | Fast portal source search. Pattern is the last argument. |
 
 <details>
@@ -171,7 +171,7 @@ The skills shell out to two user-facing scripts in `scripts/`. Files prefixed wi
 | **Setup time** | ~5 minutes | 30–60+ minutes (first build) |
 | **Best for** | Client extensions, theme dev, testing | Core debugging, portal patches, deep investigation |
 | **Services** | All in Docker (Liferay + DB + Search + ...) | Only supporting services in Docker; Liferay runs locally |
-| **Config files** | `docker-compose.yml`, `configs/docker/` | `docker-compose.source.yml`, `configs/source/`, `.env.source` |
+| **Config files** | `docker-compose.yml`, `configs/docker/` | `docker-compose.source.yml`, `configs/source/` |
 
 ---
 

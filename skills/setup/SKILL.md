@@ -45,7 +45,7 @@ Collect **all** of the following values regardless of chosen mode (so source-mod
 - **Mode**: Docker (default, can be flipped later via `bash scripts/local_setup.sh --source`) or Source.
 - **Source**: where to clone `liferay-portal-ee` (default: `../liferay-portal-ee`, sibling to the workspace).
 - **Bundle cache** (default `~/.liferay/liferay-binaries-cache-2020`).
-- **Bundles**: source-mode bundles output (default: `<source>/bundles`, matching Ant's build output).
+- **Bundles**: source-mode bundles output (default: `<source>/../bundles`, matching Ant's `app.server.parent.dir=../bundles` default). If the user has an `app.server.${user.name}.properties` in the portal source, its `app.server.parent.dir` value overrides ant's choice — point this at the same path to keep the script in sync.
 - **Hotfix**: scan `~/.liferay/hotfixes/` for zips; if multiple found present a numbered list, if none found leave blank.
 - **DXP License**: scan `~/.liferay/activation/activation-key-*.xml`; if multiple found present a numbered list, if none found fail with an error.
 
@@ -75,9 +75,14 @@ Only ask the user manually if neither source yields a version.
 
 Run regardless of chosen mode — Source mode uses the same compose file plus `docker-compose.source.yml` to disable the Liferay container.
 
-Check if `docker-compose.yml` already exists. If it does, skip this step.
+Check if `docker-compose.yml` already exists:
 
-Otherwise, show the following selection and ask: **"Type numbers to toggle (e.g. `5`), or `ok` to confirm:"**
+- **First run** (no file): show the selection UI below to collect element choices.
+- **Re-run** (file exists): read `elements` from `.liferay-workspace.json` and skip the UI — reuse the prior selection. Tell the user up front that **local edits to `docker-compose.yml` and `configs/docker/` will be overwritten** so plugin recipe updates propagate.
+
+In both cases, regenerate `docker-compose.yml` and `configs/docker/` from the recipes below.
+
+Selection UI (first run only): **"Type numbers to toggle (e.g. `5`), or `ok` to confirm:"**
 
 ```
   [x] 1. Liferay    — DXP container (required)
@@ -228,7 +233,7 @@ liferay.workspace.home.dir=<bundles path>
 
 ## Step 6 — Source Setup
 
-Invoke the `liferay-workspace:setup-source` skill **regardless of chosen mode**. It writes the source-mode config files (`configs/source/portal-env.properties`, `docker-compose.source.yml`, `.env.source`) idempotently. Seeding these in Docker-first installs means the user can later run `bash scripts/local_setup.sh --source` without going back through `/setup`.
+Invoke the `liferay-workspace:setup-source` skill **regardless of chosen mode**. It writes the source-mode config files (`configs/source/portal-env.properties`, `docker-compose.source.yml`) idempotently. Seeding these in Docker-first installs means the user can later run `bash scripts/local_setup.sh --source` without going back through `/setup` — `local_setup.sh` reads source/bundle paths directly from `.liferay-workspace.json`.
 
 The portal clone and `ant all` build are handled by `scripts/local_setup.sh`'s prereq step on the first source-mode boot — do not run them separately.
 
@@ -251,8 +256,9 @@ On Linux, before invoking the script in Docker mode, uncomment `user: ${UID}:${G
 The script reads `paths.license` from `.liferay-workspace.json` (with a fallback glob to `~/.liferay/activation/activation-key-*.xml`). Source mode does **not** install the license inside the script — after the script returns, copy it manually:
 
 ```bash
-source .env.source
-cp <paths.license> "$LIFERAY_PORTAL_BUNDLES/osgi/modules/"
+BUNDLES=$(jq -r '.paths.bundles' .liferay-workspace.json)
+LICENSE=$(jq -r '.paths.license' .liferay-workspace.json)
+cp "$LICENSE" "$BUNDLES/osgi/modules/"
 ```
 
 ## Step 8 — Finish

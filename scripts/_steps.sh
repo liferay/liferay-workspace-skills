@@ -100,22 +100,37 @@ step_build() {
 
 step_start() {
 	if [ "$LIFERAY_MODE" = "source" ]; then
-		log_step "Starting supporting services (database, search, servicenow, mail)"
+		log_step "Starting supporting services"
 
 		log_cmd docker_compose_cmd up -d
 
 		log_step "Copying portal properties for source mode"
 
 		local tomcat_dir
-		tomcat_dir=$(find_tomcat_dir)
+		if ! tomcat_dir=$(find_tomcat_dir); then
+			log_error "Could not find tomcat-* under $PORTAL_BUNDLES."
+			log_error "Portal source build is missing. Run: bash scripts/local_setup.sh prereqs --source"
+			exit 1
+		fi
 
-		log_cmd cp configs/common/portal-ext.properties "$PORTAL_BUNDLES/"
-		log_cmd cp configs/common/portal-all.properties "$PORTAL_BUNDLES/"
-		log_cmd cp configs/source/portal-env.properties "$PORTAL_BUNDLES/"
-		log_cmd cp configs/common/portal-setup-wizard.properties "$PORTAL_BUNDLES/"
+		local prop
+		for prop in \
+			configs/common/portal-ext.properties \
+			configs/common/portal-all.properties \
+			configs/source/portal-env.properties \
+			configs/common/portal-setup-wizard.properties; do
+			if [ -f "$prop" ]; then
+				log_cmd cp "$prop" "$PORTAL_BUNDLES/"
+			fi
+		done
 
 		mkdir -p "$PORTAL_BUNDLES/osgi/configs"
-		log_cmd cp configs/source/osgi/configs/*.config "$PORTAL_BUNDLES/osgi/configs/"
+		shopt -s nullglob
+		local -a osgi_configs=(configs/source/osgi/configs/*.config)
+		shopt -u nullglob
+		if [ ${#osgi_configs[@]} -gt 0 ]; then
+			log_cmd cp "${osgi_configs[@]}" "$PORTAL_BUNDLES/osgi/configs/"
+		fi
 
 		mkdir -p "$PORTAL_BUNDLES/deploy"
 		mkdir -p "$PORTAL_BUNDLES/osgi/modules"
