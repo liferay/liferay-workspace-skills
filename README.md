@@ -200,7 +200,7 @@ Select services:
   [x] 1. Liferay      — DXP container (required)
   [x] 2. DB           — PostgreSQL 16
   [x] 3. Search       — Elasticsearch
-  [x] 4. Mail         — Mailhog
+  [x] 4. Mail         — Mailpit
   [ ] 5. ServiceNow   — Mock server
 
 ✓ docker-compose.yml generated

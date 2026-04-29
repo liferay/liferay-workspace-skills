@@ -7,8 +7,8 @@ name: setup-source
 Invoked unconditionally by `/setup` (regardless of the user's chosen initial mode) so that `bash scripts/local_setup.sh --source` works later without re-running `/setup`. All file writes are idempotent — skip if the target already exists.
 
 Read `.liferay-workspace.json`. Extract:
-- `paths.source` → `PORTAL_SOURCE` (abs path to liferay-portal-ee clone)
-- `paths.bundles` → `PORTAL_BUNDLES` (abs path to built portal bundles)
+- `paths.source` → `LIFERAY_PORTAL_SOURCE` (abs path to liferay-portal-ee clone)
+- `paths.bundles` → `LIFERAY_PORTAL_BUNDLES` (abs path to built portal bundles)
 
 The clone of `liferay-portal-ee` and the `ant all` build are run by `scripts/local_setup.sh --source` (via `step_prereqs`) on the first source-mode boot — do not invoke them from this skill.
 
@@ -55,8 +55,8 @@ Report ✓ created or — already exists.
 Write `.env.source` to the workspace root. This file is the source-mode marker that `doctor` detects and the variable source that `clean` relies on:
 
 ```
-PORTAL_SOURCE=<PORTAL_SOURCE>
-PORTAL_BUNDLES=<PORTAL_BUNDLES>
+LIFERAY_PORTAL_SOURCE=<LIFERAY_PORTAL_SOURCE>
+LIFERAY_PORTAL_BUNDLES=<LIFERAY_PORTAL_BUNDLES>
 ```
 
 Report ✓ written.

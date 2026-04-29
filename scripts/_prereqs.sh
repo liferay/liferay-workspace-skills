@@ -95,6 +95,29 @@ _read_hotfix_json() {
 resolve_git_revision()    { _read_hotfix_json "build.git-revision"; }
 resolve_product_version() { _read_hotfix_json "requirement.product-version"; }
 
+# Fallback when no hotfix.json is available: derive the portal branch/tag from
+# liferay.workspace.product in gradle.properties (e.g. dxp-2026.q1.5-lts → 2026.q1.5).
+resolve_product_version_from_gradle() {
+	local gradle_props="${SCRIPT_DIR}/../gradle.properties"
+
+	if [ ! -f "$gradle_props" ]; then
+		echo ""
+		return
+	fi
+
+	local product
+	product=$(grep -E '^\s*liferay\.workspace\.product=' "$gradle_props" | sed 's/.*=//' | tr -d '[:space:]')
+
+	if [ -z "$product" ]; then
+		echo ""
+		return
+	fi
+
+	product="${product#dxp-}"
+	product="${product%-lts}"
+	echo "$product"
+}
+
 _clone_or_update_portal_ee() {
 	local git_revision="$1"
 	local product_version="$2"
@@ -103,7 +126,9 @@ _clone_or_update_portal_ee() {
 		local current_commit
 		current_commit=$(git -C "$LIFERAY_PORTAL_SOURCE" rev-parse HEAD 2>/dev/null || echo "")
 
-		if [ "$current_commit" = "$git_revision" ]; then
+		if [ -z "$git_revision" ]; then
+			echo "  ✓ liferay-portal-ee already cloned at ${current_commit:0:12} (no hotfix configured)"
+		elif [ "$current_commit" = "$git_revision" ]; then
 			echo "  ✓ liferay-portal-ee already at ${git_revision:0:12}"
 		else
 			log_step "Updating liferay-portal-ee to commit ${git_revision:0:12} (was ${current_commit:0:12})"
@@ -112,13 +137,19 @@ _clone_or_update_portal_ee() {
 			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" checkout "$git_revision"
 		fi
 	else
-		log_step "Cloning liferay-portal-ee at tag ${product_version} (commit ${git_revision:0:12})"
+		if [ -n "$git_revision" ]; then
+			log_step "Cloning liferay-portal-ee at tag ${product_version} (commit ${git_revision:0:12})"
+		else
+			log_step "Cloning liferay-portal-ee at branch/tag ${product_version}"
+		fi
 
 		log_cmd git clone --depth 1 --single-branch --branch "$product_version" \
 			git@github.com:liferay/liferay-portal-ee.git "$LIFERAY_PORTAL_SOURCE"
 
-		log_cmd git -C "$LIFERAY_PORTAL_SOURCE" fetch origin "$git_revision" --depth 1
-		log_cmd git -C "$LIFERAY_PORTAL_SOURCE" checkout "$git_revision"
+		if [ -n "$git_revision" ]; then
+			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" fetch origin "$git_revision" --depth 1
+			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" checkout "$git_revision"
+		fi
 	fi
 }
 
@@ -147,9 +178,13 @@ step_clone_portal() {
 	local product_version
 	product_version=$(resolve_product_version)
 
-	if [ -z "$git_revision" ] || [ -z "$product_version" ]; then
-		log_error "Could not resolve git revision from hotfix.json."
-		log_error "Ensure bundles/patching-tool/patches/liferay-dxp-*-hotfix-*/hotfix.json exists."
+	if [ -z "$product_version" ]; then
+		product_version=$(resolve_product_version_from_gradle)
+	fi
+
+	if [ -z "$product_version" ]; then
+		log_error "Could not resolve portal version."
+		log_error "Set liferay.workspace.product in gradle.properties, or provide bundles/patching-tool/patches/liferay-dxp-*-hotfix-*/hotfix.json."
 		exit 1
 	fi
 

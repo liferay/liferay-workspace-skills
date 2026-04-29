@@ -83,7 +83,7 @@ Otherwise, show the following selection and ask: **"Type numbers to toggle (e.g.
   [x] 1. Liferay    — DXP container (required)
   [x] 2. DB         — PostgreSQL 16
   [x] 3. Search     — Elasticsearch
-  [x] 4. Mail       — Mailhog
+  [x] 4. Mail       — Mailpit
   [ ] 5. ServiceNow — Mock server
 ```
 
@@ -137,10 +137,10 @@ search:
   ports: ["127.0.0.1:9200:9200"]
 ```
 
-**Mail** (Mailhog)
+**Mail** (Mailpit)
 ```yaml
 mail:
-  image: mailhog/mailhog
+  image: axllent/mailpit
   networks: [liferay]
   ports:
     - "1025:1025"
@@ -252,7 +252,7 @@ The script reads `paths.license` from `.liferay-workspace.json` (with a fallback
 
 ```bash
 source .env.source
-cp <paths.license> "$PORTAL_BUNDLES/osgi/modules/"
+cp <paths.license> "$LIFERAY_PORTAL_BUNDLES/osgi/modules/"
 ```
 
 ## Step 8 — Finish
