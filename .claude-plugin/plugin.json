@@ -1,5 +1,5 @@
 {
   "name": "liferay-workspace",
   "description": "A Claude plugin for Liferay Workspace projects that provides context and skills for local development setup, including Docker and source mode configuration, client extension builds, site initializer deployments, and DXP license management.",
-  "version": "0.1.0"
+  "version": "0.1.1"
 }

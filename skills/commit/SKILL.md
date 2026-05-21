@@ -1,5 +1,5 @@
 ---
-allowed-tools: Read Glob Grep Bash(git *)
+allowed-tools: Bash(git *) Glob Grep Read
 argument-hint: [TICKET-000] [description]
 description: Create a Git commit following the Liferay convention — TICKET-000 Imperative verb description. Use when the user asks to commit, wants to commit changes, or invokes /commit.
 disable-model-invocation: true
@@ -8,9 +8,9 @@ name: commit
 
 # Commit
 
-Create a well-formatted git commit following the Liferay ticket convention.
+Create a well-formatted git commit. Follow the message format and ticket-extraction order in [`../../rules/commit.md`](../../rules/commit.md).
 
-## Step 1 — Gather context
+## Step 1 — Gather Context
 
 Run in parallel:
 
@@ -30,44 +30,33 @@ git diff --stat
 git log --oneline -10
 ```
 
-If there are no staged changes and no unstaged changes, stop and tell the user there is nothing to commit.
+When there are no staged changes and no unstaged changes, stop and tell the user there is nothing to commit.
 
-## Step 2 — Determine ticket and message
+## Step 2 — Determine Ticket and Message
 
-Parse `$ARGUMENTS` for a ticket ID (pattern: `UPPERCASE-DIGITS`, e.g. `LPD-12345`, `LPS-100`, `COMMERCE-456`).
-
-- If a ticket ID is found in the arguments, use it.
-- If no ticket ID is found, check the current branch name for a ticket pattern (e.g. `feature/LPD-12345-some-description`).
-- If still no ticket ID, ask the user for one.
+Follow the ticket-extraction order in [`../../rules/commit.md`](../../rules/commit.md): explicit `${ARGUMENTS}` first, then current branch name, then most recent commits, then ask the user.
 
 For the description:
 
-- If provided in arguments, use it as-is (ensure it starts with an imperative verb).
-- If not provided, analyze the staged/unstaged changes and generate a concise description starting with an imperative verb (e.g. "Add", "Fix", "Update", "Remove", "Refactor").
+- When provided in arguments, use it as-is (ensure it starts with an imperative verb).
+- When not provided, analyze the staged and unstaged changes and generate a concise description starting with an imperative verb (`Add`, `Fix`, `Update`, `Remove`, `Refactor`).
 
-## Step 3 — Stage changes
+## Step 3 — Stage Changes
 
-If there are no staged changes but there are unstaged changes, show the list of changed files and ask: **"Stage all changes? (Y/n) or list specific files:"**
+When there are no staged changes but there are unstaged changes, show the list of changed files and ask: **"Stage all changes? (Y/n) or list specific files:"**
 
-- If the user confirms, stage all relevant changes (exclude `.env`, credentials, secrets).
-- If the user lists files, stage only those.
+- When the user confirms, stage all relevant changes — exclude secret files per the guard in [`../../rules/commit.md`](../../rules/commit.md).
+- When the user lists files, stage only those.
 
-If there are already staged changes, use them as-is.
+When there are already staged changes, use them as-is.
 
 ## Step 4 — Commit
 
-Format the commit message as:
+Build the message following [`../../rules/commit.md`](../../rules/commit.md):
 
 ```
 TICKET-000 Imperative verb description
 ```
-
-Rules:
-- Ticket ID in uppercase, followed by a single space
-- Description starts with a capitalized imperative verb
-- No period at the end
-- Keep the first line under 72 characters
-- If more context is needed, add a blank line followed by a body paragraph
 
 Create the commit:
 

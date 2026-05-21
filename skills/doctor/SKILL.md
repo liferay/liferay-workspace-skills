@@ -16,12 +16,12 @@ echo "---JAVA---" && java -version 2>&1; echo "---DOCKER---" && docker --version
 **Pass criteria:**
 - **JDK 17–23**: version string matches `"17.`, `"18.`, `"19.`, `"20.`, `"21.`, `"22.`, or `"23.`
 - **Docker**: command succeeds
-- **Apache Ant**: only required when `SOURCE_MODE=true`
+- **Apache Ant**: only required when `SOURCE_MODE=true`. Parse the version from `Apache Ant(TM) version X.Y.Z` — it must be **1.10.14 or above** (compare as dotted version, not lexicographically: `1.10.14` ≥ `1.10.14`, `1.9.x` fails, `1.10.13` fails).
 
 **Install hints:**
 - JDK: `sdk install java 21-tem` (SDKMAN) or download from https://adoptium.net
 - Docker: install Docker Desktop from https://www.docker.com/products/docker-desktop
-- Ant: `brew install ant` (macOS) or `apt-get install ant` (Debian/Ubuntu) or download from https://ant.apache.org/bindownload.cgi
+- Ant 1.10.14+: `brew install ant` (macOS) or `apt-get install ant` (Debian/Ubuntu) or download from https://ant.apache.org/bindownload.cgi
 
 ## Health summary (standalone only)
 

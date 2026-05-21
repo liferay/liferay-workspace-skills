@@ -1,29 +1,31 @@
 ---
-allowed-tools: Read Bash(curl *) Bash(git show *) Bash(git log *) Bash(git branch *) Bash(cat *) Bash(test *) Bash(python3 *)
+allowed-tools: Bash(cat *) Bash(git branch *) Bash(git log *) Bash(git show *) Bash(test *) Read
 argument-hint: "[commit hash or description]"
-description: File a Jira bug ticket in the LPD project through the REST API. Use when the user asks to file or create a bug, report an issue, open an LPD bug, or invokes /bug.
+description: Build the Jira REST `curl` command to file a Bug in the LPD project and print it for the user to run. Use when the user asks to file or create a bug, report an issue, open an LPD bug, or invokes /bug.
 disable-model-invocation: true
 name: bug
 ---
 
 # File a Jira Bug in LPD
 
-Create a bug ticket in the LPD Jira project through the REST API, authenticating with `${JIRA_API_USER}` and `${JIRA_API_TOKEN}`.
+Construct the `curl` command that files a Bug in the LPD Jira project and **print it for the user to run manually**. Do not invoke `curl`. Follow the conventions in [`../../rules/jira.md`](../../rules/jira.md) — auth, endpoint, project, issue type IDs, custom fields, ADF skeleton, and the print-do-not-run execution model.
 
-## Step 1 — Verify credentials
+The Bug uses these description sections in order — Description, Steps to Reproduce, Expected Behavior, Actual Behavior, Branch (only inside a workspace git repository), Fix (only when a commit was referenced).
+
+## Step 1 — Verify Credentials
 
 ```bash
 [ -n "${JIRA_API_USER}" ] && [ -n "${JIRA_API_TOKEN}" ] && echo "OK" || echo "MISSING"
 ```
 
-If `MISSING`, instruct the user to export both environment variables and stop.
+When `MISSING`, instruct the user to export both environment variables and stop without printing any `curl` block.
 
-## Step 2 — Gather context
+## Step 2 — Gather Context
 
 Parse `${ARGUMENTS}`:
 
-- If it is a commit hash, run `git show <hash>` to understand the fix and infer the bug.
-- If it is a free-form description, use it directly.
+- When it is a commit hash, run `git show <hash>` to understand the fix and infer the bug.
+- When it is a free-form description, use it directly.
 
 Determine the Liferay version (used for the **Affects Version** field). Check in order:
 
@@ -37,7 +39,7 @@ When running inside a workspace git repository, also capture the current branch 
 git branch --show-current 2>/dev/null
 ```
 
-## Step 3 — Collect bug details
+## Step 3 — Collect Bug Details
 
 Request any missing pieces from the user:
 
@@ -45,12 +47,12 @@ Request any missing pieces from the user:
 - **Steps to Reproduce** — clear, minimal steps.
 - **Expected Behavior** — what should have happened.
 - **Actual Behavior** — what happened instead.
-- **Component** — affected Liferay module or feature area (e.g. Journal, Commerce, Objects).
+- **Component** — affected Liferay module or feature area (Journal, Commerce, Objects, etc.).
 - **Priority** — `Highest`, `High`, `Medium` (default), `Low`, or `Lowest`. Map any user input like "critical" / "major" / "minor" / "trivial" onto the closest Jira priority.
 
 When the user supplies a stack trace or error message, include it verbatim in the **Actual Behavior** section.
 
-## Step 4 — Resolve the component ID
+## Step 4 — Resolve the Component ID
 
 Common LPD components (use the listed ID when one matches):
 
@@ -60,33 +62,15 @@ Common LPD components (use the listed ID when one matches):
 - `Journal` → search dynamically (changes over time)
 - `Object Definitions` → search dynamically
 
-For anything not listed, search by keyword:
+When the component is not in the list, **print the component-search `curl` command from [`../../rules/jira.md`](../../rules/jira.md)** for the user to run and pick an ID from the response. Do not invoke the search yourself.
 
-```bash
-curl \
-	--silent \
-	--url "https://liferay.atlassian.net/rest/api/3/project/LPD/components" \
-	--user "${JIRA_API_USER}:${JIRA_API_TOKEN}" \
-	| python3 -c "import json, sys; [print(f'{c[\"id\"]:>6} {c[\"name\"]}') for c in json.load(sys.stdin) if 'KEYWORD' in c['name'].lower()]"
-```
+## Step 5 — Resolve the Affects Version ID
 
-Replace `KEYWORD` with a lowercase substring from the user's component answer.
+For changes targeting the latest development branch, use **Master** (ID `16660`).
 
-## Step 5 — Resolve the affects version ID
+For a specific DXP release, **print the version-search `curl` command from [`../../rules/jira.md`](../../rules/jira.md)** for the user to run.
 
-For changes targeting the latest development branch, use `Master` (ID `16660`).
-
-For a specific DXP release, search:
-
-```bash
-curl \
-	--silent \
-	--url "https://liferay.atlassian.net/rest/api/3/project/LPD/versions" \
-	--user "${JIRA_API_USER}:${JIRA_API_TOKEN}" \
-	| python3 -c "import json, sys; [print(f'{v[\"id\"]:>6} {v[\"name\"]}') for v in json.load(sys.stdin) if 'KEYWORD' in v['name'].lower()]"
-```
-
-## Step 6 — Build the payload
+## Step 6 — Build the Payload
 
 Required fields for LPD bugs:
 
@@ -97,25 +81,27 @@ Required fields for LPD bugs:
 - **Component**: from Step 4
 - **Priority**: from Step 3 (omit the field to accept the project default)
 - **Summary**: from Step 3
-- **Description**: ADF with sections in order — Description, Steps to Reproduce, Expected Behavior, Actual Behavior, Branch (only when running inside a workspace git repository), Fix (only when a commit was referenced)
+- **Description**: ADF object built from the section list above
 
-Show the assembled JSON payload to the user and ask: **"File this ticket? (y/N)"**.
+Show the assembled JSON payload to the user and ask: **"Print the `curl` command? (Y/n)"**.
 
-## Step 7 — Create the ticket
+## Step 7 — Print the Command
+
+Emit a single fenced `bash` block following the canonical command shape from [`../../rules/jira.md`](../../rules/jira.md). Use a `JIRA_PAYLOAD` heredoc to keep the `curl` flags sorted:
 
 ```bash
 JIRA_PAYLOAD=$(cat <<'EOF'
 {
-  "fields": {
-    "project": {"key": "LPD"},
-    "issuetype": {"id": "10004"},
-    "summary": "<summary>",
-    "components": [{"id": "<component-id>"}],
-    "versions": [{"id": "<version-id>"}],
-    "customfield_10979": {"id": "14468"},
-    "priority": {"name": "<priority>"},
-    "description": <ADF object>
-  }
+	"fields": {
+		"project": {"key": "LPD"},
+		"issuetype": {"id": "10004"},
+		"summary": "<summary>",
+		"components": [{"id": "<component-id>"}],
+		"versions": [{"id": "<version-id>"}],
+		"customfield_10979": {"id": "14468"},
+		"priority": {"name": "<priority>"},
+		"description": <ADF object>
+	}
 }
 EOF
 )
@@ -129,14 +115,4 @@ curl \
 	--user "${JIRA_API_USER}:${JIRA_API_TOKEN}"
 ```
 
-## Step 8 — Output
-
-Parse the response for the issue `key` and report:
-
-```
-Ticket Created
-==============
-
-Key:    <KEY>
-URL:    https://liferay.atlassian.net/browse/<KEY>
-```
+Stop after the block is printed. The user runs the command and reads the response — the new issue `key` is in the response JSON. Do not run the command, do not parse the response, and do not chain follow-up actions.
