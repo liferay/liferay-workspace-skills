@@ -5,6 +5,19 @@ readonly LOG_MARKER_TOMCAT_STARTUP='org.apache.catalina.startup.Catalina.start S
 readonly LOG_MARKER_WELCOME_SITE='Initialized com.liferay.site.initializer.welcome'
 readonly LOG_MARKER_LICENSE='License registered for DXP Development'
 
+# Stale license markers in bundles/data/license keep the previous activation key
+# alive across reinstalls and mask license problems. Clear before start/after stop.
+_remove_license_data() {
+	local data_dir="bundles/data"
+	if [ "$LIFERAY_MODE" = "source" ]; then
+		data_dir="$PORTAL_BUNDLES/data"
+	fi
+
+	if [ -d "$data_dir/license" ]; then
+		log_cmd rm -rf "$data_dir/license"
+	fi
+}
+
 step_setup_env() {
 	if [ "$LIFERAY_MODE" = "docker" ]; then
 		log_step "Setting up Docker environment"
@@ -16,6 +29,12 @@ step_setup_env() {
 		if [ "$(uname)" = "Darwin" ]; then
 			echo "UID=1000" >> .env
 			echo "GID=1000" >> .env
+		elif docker info 2>/dev/null | grep -q "rootless"; then
+			# Rootless Docker remaps non-zero container UIDs into the subuid range,
+			# breaking ownership of bind-mounted host files. UID 0 maps back to the
+			# invoking host user, which is why root works under rootless.
+			echo "UID=0" >> .env
+			echo "GID=0" >> .env
 		else
 			echo "UID=$(id -u)" >> .env
 			echo "GID=$(id -g)" >> .env
@@ -99,6 +118,8 @@ step_build() {
 }
 
 step_start() {
+	_remove_license_data
+
 	if [ "$LIFERAY_MODE" = "source" ]; then
 		log_step "Starting supporting services"
 
@@ -146,6 +167,12 @@ step_start() {
 	else
 		log_step "Starting docker services"
 
+		# Pre-create bind-mount targets so they're owned by the invoking user.
+		# If docker creates them, they end up owned by the container UID and break
+		# subsequent gradle deploys / file copies on the host.
+		mkdir -p ./bundles/data ./bundles/deploy ./bundles/logs \
+			./bundles/routes ./bundles/osgi/war ./bundles/osgi/client-extensions
+
 		log_cmd docker_compose_cmd up -d
 
 		wait_for_log "$LOG_MARKER_WELCOME_SITE" "Liferay Welcome Site"
@@ -160,12 +187,14 @@ step_stop() {
 		tomcat_dir=$(find_tomcat_dir)
 
 		log_cmd "$tomcat_dir/bin/catalina.sh" stop || true
-		log_cmd docker_compose_cmd down
+		log_cmd docker_compose_cmd stop
 	else
 		log_step "Stopping docker services"
 
-		log_cmd docker_compose_cmd down
+		log_cmd docker_compose_cmd stop
 	fi
+
+	_remove_license_data
 }
 
 _resolve_license_path() {

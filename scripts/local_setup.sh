@@ -3,6 +3,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# All other paths in the scripts are relative to the workspace root.
+cd "$WORKSPACE_DIR"
 
 # Logging must load before helpers so log_error is in scope when detect_mode runs.
 # shellcheck source=scripts/_logging.sh

@@ -49,8 +49,11 @@ check_required_ports() {
 	fi
 
 	for port in "${ports[@]}"; do
+		# -sTCP:LISTEN filters out outbound ESTABLISHED connections that happen to
+		# use the port number remotely (e.g. macOS identity services connecting to
+		# remote :1025), which would otherwise be killed as false positives.
 		local pid
-		pid=$(lsof -ti :"$port" 2>/dev/null || true)
+		pid=$(lsof -ti :"$port" -sTCP:LISTEN 2>/dev/null || true)
 
 		if [ -z "$pid" ]; then
 			continue
@@ -114,7 +117,7 @@ print_banner() {
 	echo ""
 	echo -e "  ${CYAN}${BOLD}Liferay Workspace${RESET} ${DIM}|${RESET} ${BOLD}Local Setup${RESET}"
 	echo -e "  ${DIM}─────────────────────────────────${RESET}"
-	echo -e "  ${DIM}Workspace:${RESET} ${SCRIPT_DIR}"
+	echo -e "  ${DIM}Workspace:${RESET} ${WORKSPACE_DIR}"
 
 	if [ "$LIFERAY_MODE" = "source" ]; then
 		echo -e "  ${DIM}Mode:${RESET}      ${CYAN}Source${RESET}"
@@ -130,7 +133,7 @@ print_banner() {
 		fi
 	else
 		echo -e "  ${DIM}Mode:${RESET}      Docker"
-		echo -e "  ${DIM}Bundles:${RESET}   ${SCRIPT_DIR}/bundles"
+		echo -e "  ${DIM}Bundles:${RESET}   ${WORKSPACE_DIR}/bundles"
 
 		if [ -n "$HOTFIX_NAME" ]; then
 			echo -e "  ${DIM}Hotfix:${RESET}    ${HOTFIX_NAME}"
@@ -178,8 +181,13 @@ wait_for_log() {
 	fi
 
 	# Expand now: locals unbind before the RETURN trap fires under set -u.
+	# Use `|| true` after kill: bash RETURN traps are shell-level (not function-
+	# scoped), so this trap re-fires on every subsequent function return. The
+	# second firing kills an already-dead PID, which returns non-zero. Under
+	# `set -e`, a failing command in a `;` list aborts the shell — `|| true`
+	# exempts it. The trailing `true` keeps the trap's overall exit status 0.
 	# shellcheck disable=SC2064
-	trap "kill $log_pid 2>/dev/null; rm -f $fifo; true" RETURN
+	trap "kill $log_pid 2>/dev/null || true; rm -f $fifo; true" RETURN
 
 	while IFS= read -r line; do
 		echo "$line"

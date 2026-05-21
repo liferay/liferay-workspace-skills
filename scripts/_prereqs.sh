@@ -41,6 +41,12 @@ resolve_hotfix_name() {
 	fi
 }
 
+_hotfix_version_from_name() {
+	echo "$1" | sed 's/^liferay-dxp-\(.*\)-hotfix-[0-9]*$/\1/'
+}
+
+# Resolves the local path to the hotfix zip without downloading.
+# Canonical location is the workspace patches dir; ~/.liferay/hotfixes is a legacy cache.
 _hotfix_zip_path() {
 	local hotfix_name="${HOTFIX_NAME:-}"
 
@@ -49,47 +55,85 @@ _hotfix_zip_path() {
 		return
 	fi
 
+	local bundles_dir="${PORTAL_BUNDLES:-bundles}"
+	local workspace_zip="${bundles_dir}/patching-tool/patches/${hotfix_name}.zip"
+
+	if [ -f "$workspace_zip" ]; then
+		echo "$workspace_zip"
+		return
+	fi
+
 	local version
-	version=$(echo "$hotfix_name" | sed 's/^liferay-dxp-\(.*\)-hotfix-[0-9]*$/\1/')
+	version=$(_hotfix_version_from_name "$hotfix_name")
+	local cache_zip="${HOME}/.liferay/hotfixes/${version}/${hotfix_name}.zip"
 
-	local zip="${HOME}/.liferay/hotfixes/${version}/${hotfix_name}.zip"
-
-	if [ -f "$zip" ]; then
-		echo "$zip"
+	if [ -f "$cache_zip" ]; then
+		echo "$cache_zip"
 	else
 		echo ""
 	fi
 }
 
+# Ensures the hotfix zip is present locally, downloading from releases-cdn.liferay.com
+# if missing. Returns the zip path on stdout; all logs go to stderr so callers can
+# capture the path via command substitution.
+_ensure_hotfix_zip() {
+	local hotfix_name="${HOTFIX_NAME:-}"
+
+	if [ -z "$hotfix_name" ]; then
+		echo ""
+		return
+	fi
+
+	local existing
+	existing=$(_hotfix_zip_path)
+
+	if [ -n "$existing" ]; then
+		echo "$existing"
+		return
+	fi
+
+	local version
+	version=$(_hotfix_version_from_name "$hotfix_name")
+	local bundles_dir="${PORTAL_BUNDLES:-bundles}"
+	local patches_dir="${bundles_dir}/patching-tool/patches"
+	local target="${patches_dir}/${hotfix_name}.zip"
+	local url="https://releases-cdn.liferay.com/dxp/hotfix/${version}/${hotfix_name}.zip"
+
+	mkdir -p "$patches_dir"
+
+	echo "  ↓ Downloading hotfix ${hotfix_name} from ${url}" >&2
+
+	if ! curl -fsSL --retry 3 -o "${target}.part" "$url" >&2; then
+		rm -f "${target}.part"
+		log_error "Failed to download hotfix from ${url}"
+		echo ""
+		return 1
+	fi
+
+	mv "${target}.part" "$target"
+	echo "  ✓ Saved hotfix to ${target}" >&2
+	echo "$target"
+}
+
 # Read hotfix.json by dot-path. Splits the path inside jq via getpath so hyphenated
-# keys (build.git-revision) work without bareword quoting. Prefers the local zip;
-# falls back to the unpacked file under bundles/.
+# keys (build.git-revision) work without bareword quoting. Reads directly from the
+# zip via unzip -p — never extracts to a folder.
 _read_hotfix_json() {
 	local json_path="$1"
 	local jq_filter='($path | split(".")) as $p | getpath($p) // ""'
 
 	local zip
-	zip=$(_hotfix_zip_path)
+	zip=$(_ensure_hotfix_zip)
 
-	if [ -n "$zip" ]; then
-		unzip -p "$zip" hotfix.json 2>/dev/null \
-			| jq -r --arg path "$json_path" "$jq_filter" 2>/dev/null \
-			|| true
-		return
-	fi
-
-	local bundles_dir="${PORTAL_BUNDLES:-bundles}"
-	local -a hotfix_jsons=()
-	shopt -s nullglob
-	hotfix_jsons=( "$bundles_dir"/patching-tool/patches/liferay-dxp-*-hotfix-*/hotfix.json )
-	shopt -u nullglob
-
-	if [ ${#hotfix_jsons[@]} -eq 0 ]; then
+	if [ -z "$zip" ]; then
 		echo ""
 		return
 	fi
 
-	jq -r --arg path "$json_path" "$jq_filter" "${hotfix_jsons[0]}" 2>/dev/null || true
+	unzip -p "$zip" hotfix.json 2>/dev/null \
+		| jq -r --arg path "$json_path" "$jq_filter" 2>/dev/null \
+		|| true
 }
 
 resolve_git_revision()    { _read_hotfix_json "build.git-revision"; }
@@ -124,10 +168,6 @@ _clone_or_update_portal_ee() {
 	local git_revision="$1"
 	local product_version="$2"
 
-	# Set by this function so step_prereqs can decide whether to force a rebuild.
-	# True means the source moved (or was just cloned) and the bundle is stale.
-	PORTAL_SOURCE_UPDATED=false
-
 	if [ -d "$LIFERAY_PORTAL_SOURCE/.git" ]; then
 		local current_commit
 		current_commit=$(git -C "$LIFERAY_PORTAL_SOURCE" rev-parse HEAD 2>/dev/null || echo "")
@@ -158,7 +198,6 @@ _clone_or_update_portal_ee() {
 			fi
 
 			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" checkout "$target_commit"
-			PORTAL_SOURCE_UPDATED=true
 		fi
 	else
 		if [ -n "$git_revision" ]; then
@@ -174,8 +213,6 @@ _clone_or_update_portal_ee() {
 			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" fetch "$LIFERAY_PORTAL_EE_URL" "$git_revision" --depth 1
 			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" checkout "$git_revision"
 		fi
-
-		PORTAL_SOURCE_UPDATED=true
 	fi
 }
 
@@ -210,7 +247,7 @@ step_clone_portal() {
 
 	if [ -z "$product_version" ]; then
 		log_error "Could not resolve portal version."
-		log_error "Set liferay.workspace.product in gradle.properties, or provide bundles/patching-tool/patches/liferay-dxp-*-hotfix-*/hotfix.json."
+		log_error "Set liferay.workspace.product in gradle.properties, or ensure bundles/patching-tool/patches/${HOTFIX_NAME:-liferay-dxp-*-hotfix-*}.zip exists or is reachable at releases-cdn.liferay.com."
 		exit 1
 	fi
 
@@ -246,39 +283,18 @@ step_prereqs() {
 		step_clone_portal
 		echo "  ✓ Portal home"
 
+		step_build_portal
+
+		# ant honors app.server.${user}.properties' app.server.parent.dir, which can
+		# write the bundle somewhere other than $PORTAL_BUNDLES. Catch that mismatch
+		# here instead of failing minutes later in step_start.
 		local tomcat_dir
 		tomcat_dir=$(find_tomcat_dir 2>/dev/null || echo "")
 
-		local portal_osgi_ok=false
-		# shellcheck disable=SC2086
-		if compgen -G "$PORTAL_BUNDLES/osgi/portal/com.liferay.portal.file.install.impl-*.jar" > /dev/null 2>&1; then
-			portal_osgi_ok=true
-		fi
-
-		local rebuild_reason=""
-
-		if [ -z "$tomcat_dir" ] || [ ! -f "$tomcat_dir/bin/catalina.sh" ] || [ "$portal_osgi_ok" = false ]; then
-			rebuild_reason="missing Tomcat or core OSGi bundles in $PORTAL_BUNDLES"
-		elif [ "${PORTAL_SOURCE_UPDATED:-false}" = true ]; then
-			rebuild_reason="liferay-portal-ee source updated — bundle is stale"
-		fi
-
-		if [ -n "$rebuild_reason" ]; then
-			echo "  ✗ Portal bundles — $rebuild_reason"
-			echo ""
-			echo "  Building portal from source..."
-			step_build_portal
-
-			# Re-check: ant honors app.server.${user}.properties' app.server.parent.dir,
-			# which can write the bundle somewhere other than $PORTAL_BUNDLES. Catch
-			# that mismatch here instead of failing 4+ minutes later in step_start.
-			tomcat_dir=$(find_tomcat_dir 2>/dev/null || echo "")
-
-			if [ -z "$tomcat_dir" ] || [ ! -f "$tomcat_dir/bin/catalina.sh" ]; then
-				log_error "Build finished but no tomcat-* found in $PORTAL_BUNDLES."
-				log_error "Check app.server.\${user}.properties' app.server.parent.dir against paths.bundles in .liferay-workspace.json."
-				exit 1
-			fi
+		if [ -z "$tomcat_dir" ] || [ ! -f "$tomcat_dir/bin/catalina.sh" ]; then
+			log_error "Build finished but no tomcat-* found in $PORTAL_BUNDLES."
+			log_error "Check app.server.\${user}.properties' app.server.parent.dir against paths.bundles in .liferay-workspace.json."
+			exit 1
 		fi
 
 		echo "  ✓ Portal bundles"
