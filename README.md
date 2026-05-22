@@ -25,8 +25,8 @@ claude --plugin-dir /path/to/liferay-workspace-claude-plugin
 For a persistent install via marketplace:
 
 ```bash
-/plugin marketplace add /path/to/parent-directory
-/plugin install liferay-workspace-claude-plugin@<marketplace-name>
+/plugin marketplace add liferay/liferay-workspace-claude-plugin
+/plugin install liferay-workspace@liferay-workspace-plugins
 ```
 
 ## Quick Start
