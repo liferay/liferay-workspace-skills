@@ -1,0 +1,16 @@
+{
+	"$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+	"name": "liferay-workspace-plugins",
+	"owner": {
+		"name": "Liferay",
+		"email": "rafael.oliveira@liferay.com"
+	},
+	"plugins": [
+		{
+			"name": "liferay-workspace",
+			"category": "development",
+			"source": "./plugins/liferay-workspace",
+			"description": "A Claude plugin for Liferay Workspace projects that provides context and skills for local development setup, including Docker and source mode configuration, client extension builds, site initializer deployments, and DXP license management."
+		}
+	]
+}
