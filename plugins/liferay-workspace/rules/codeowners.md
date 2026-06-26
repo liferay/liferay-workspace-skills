@@ -48,11 +48,13 @@ The following handles route to a fork. Anything else is treated as "no owner".
 | `@liferay-search` | `liferay-search` |
 | `@liferay-site-management` | `liferay-site-management` |
 
-The target repository is always `<organization>/<current-repo-name>` (for example, `liferay-bpm/liferay-portal-ee` when working inside `liferay-portal-ee`). Derive the repository name from the upstream remote:
+The target repository is always `<organization>/<repo-name>` (for example, `liferay-bpm/liferay-portal`). Derive `<repo-name>` from the upstream remote:
 
 ```bash
 basename "$(git config --get remote.origin.url)" .git
 ```
+
+Contributors do not have access to open pull requests against `liferay-dxp` (the private EE repository) or its forks. When this command returns `liferay-dxp`, use **`liferay-portal`** as `<repo-name>` instead — contributions are routed to the public `liferay-portal` and its team forks even when the local checkout is `liferay-dxp`. For any other repository, use the returned name as-is.
 
 ## Resolving Owners from Changed Files
 
@@ -100,7 +102,7 @@ git remote --verbose
 
 ## Constructing the `gh pr create` Invocation
 
-When fork routing is active, the PR creation uses cross-repository flags. The base branch is always `master` for both `liferay-portal` and `liferay-portal-ee`.
+When fork routing is active, the PR creation uses cross-repository flags. The PR always targets `liferay-portal` (see the `<repo-name>` normalization above), so the base branch is always `master` — the default (HEAD) branch of `liferay-portal`.
 
 ```bash
 PR_BODY=$(cat <<'EOF'

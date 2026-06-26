@@ -113,7 +113,7 @@ The plugin generates a `.liferay-workspace.json` file in your workspace root dur
   "hotfixCommit": "abc123def",
   "mode": "docker",
   "paths": {
-    "source": "/path/to/liferay-portal-ee",
+    "source": "/path/to/liferay-dxp",
     "bundleCache": "~/.liferay/liferay-binaries-cache-2020",
     "bundles": "/path/to/bundles",
     "license": "~/.liferay/activation/activation-key.xml"
@@ -128,7 +128,7 @@ The plugin generates a `.liferay-workspace.json` file in your workspace root dur
 | `hotfix` | Selected hotfix filename (if any) |
 | `hotfixCommit` | Git commit SHA from hotfix metadata |
 | `mode` | `docker` or `source` |
-| `paths.source` | Path to `liferay-portal-ee` clone |
+| `paths.source` | Path to `liferay-dxp` clone |
 | `paths.bundleCache` | Path to binary cache for offline builds |
 | `paths.bundles` | Output directory for compiled bundles |
 | `paths.license` | Path to DXP activation key |
@@ -221,7 +221,7 @@ Liferay DXP 2026.q1.2 is running at http://localhost:8080
 > /liferay-workspace:setup source
 
 # Same interactive setup, plus:
-✓ liferay-portal-ee cloned at abc123d
+✓ liferay-dxp cloned at abc123d
 ✓ Portal built (took 42 minutes)
 ✓ Source configs written
 ✓ Supporting services started (DB, Search, Mail)

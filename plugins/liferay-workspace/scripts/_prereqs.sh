@@ -162,9 +162,9 @@ resolve_product_version_from_gradle() {
 	echo "$product"
 }
 
-readonly LIFERAY_PORTAL_EE_URL="git@github.com:liferay/liferay-dxp.git"
+readonly LIFERAY_DXP_URL="git@github.com:liferay/liferay-dxp.git"
 
-_clone_or_update_portal_ee() {
+_clone_or_update_dxp() {
 	local git_revision="$1"
 	local product_version="$2"
 
@@ -178,16 +178,16 @@ _clone_or_update_portal_ee() {
 		# Fetch from the canonical upstream URL rather than `origin`. Users often
 		# repoint origin at a personal fork that lacks upstream tags/branches,
 		# and --single-branch clones restrict origin's fetch refspec.
-		log_cmd git -C "$LIFERAY_PORTAL_SOURCE" fetch "$LIFERAY_PORTAL_EE_URL" "$target_ref" --depth 1
+		log_cmd git -C "$LIFERAY_PORTAL_SOURCE" fetch "$LIFERAY_DXP_URL" "$target_ref" --depth 1
 
 		# ^{commit} dereferences annotated tags to the underlying commit.
 		local target_commit
 		target_commit=$(git -C "$LIFERAY_PORTAL_SOURCE" rev-parse 'FETCH_HEAD^{commit}' 2>/dev/null || echo "")
 
 		if [ -z "$target_commit" ] || [ "$current_commit" = "$target_commit" ]; then
-			echo "  ✓ liferay-portal-ee at ${current_commit:0:12} (${target_ref})"
+			echo "  ✓ liferay-dxp at ${current_commit:0:12} (${target_ref})"
 		else
-			log_step "Updating liferay-portal-ee to ${target_ref} ${target_commit:0:12} (was ${current_commit:0:12})"
+			log_step "Updating liferay-dxp to ${target_ref} ${target_commit:0:12} (was ${current_commit:0:12})"
 
 			# `all` sets FORCE_PORTAL_RESET so checkout doesn't fail on tracked-file
 			# modifications left by a prior ant build (bnd.bnd/packageinfo bumps).
@@ -201,16 +201,16 @@ _clone_or_update_portal_ee() {
 		fi
 	else
 		if [ -n "$git_revision" ]; then
-			log_step "Cloning liferay-portal-ee at tag ${product_version} (commit ${git_revision:0:12})"
+			log_step "Cloning liferay-dxp at tag ${product_version} (commit ${git_revision:0:12})"
 		else
-			log_step "Cloning liferay-portal-ee at branch/tag ${product_version}"
+			log_step "Cloning liferay-dxp at branch/tag ${product_version}"
 		fi
 
 		log_cmd git clone --depth 1 --single-branch --branch "$product_version" \
-			"$LIFERAY_PORTAL_EE_URL" "$LIFERAY_PORTAL_SOURCE"
+			"$LIFERAY_DXP_URL" "$LIFERAY_PORTAL_SOURCE"
 
 		if [ -n "$git_revision" ]; then
-			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" fetch "$LIFERAY_PORTAL_EE_URL" "$git_revision" --depth 1
+			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" fetch "$LIFERAY_DXP_URL" "$git_revision" --depth 1
 			log_cmd git -C "$LIFERAY_PORTAL_SOURCE" checkout "$git_revision"
 		fi
 	fi
@@ -255,7 +255,7 @@ step_clone_portal() {
 	parent_dir=$(dirname "$LIFERAY_PORTAL_SOURCE")
 	mkdir -p "$parent_dir"
 
-	_clone_or_update_portal_ee "$git_revision" "$product_version"
+	_clone_or_update_dxp "$git_revision" "$product_version"
 	_ensure_binaries_cache "$parent_dir"
 }
 

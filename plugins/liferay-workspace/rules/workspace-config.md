@@ -19,7 +19,7 @@ The plugin treats `.liferay-workspace.json` as the **single source of truth** fo
 	"hotfixCommit": "<git sha or null>",
 	"mode": "docker|source",
 	"paths": {
-		"source": "<abs path to liferay-portal-ee checkout>",
+		"source": "<abs path to liferay-dxp checkout>",
 		"bundleCache": "<abs path to cached bundle archives>",
 		"bundles": "<abs path to active bundle directory>",
 		"license": "<abs path to activation-key.xml>"
@@ -31,7 +31,7 @@ The plugin treats `.liferay-workspace.json` as the **single source of truth** fo
 ## Field Notes
 
 - **version** — DXP version string. Used by `doctor` and `setup` to display the active release and by `setup-source` to derive the source branch.
-- **hotfix** / **hotfixCommit** — `null` for clean releases; populated when a hotfix bundle is applied. The commit is the git sha of the hotfix resolution in `liferay-portal-ee`.
+- **hotfix** / **hotfixCommit** — `null` for clean releases; populated when a hotfix bundle is applied. The commit is the git sha of the hotfix resolution in `liferay-dxp`.
 - **mode** — `docker` or `source`. Controls which Compose file is generated and whether the Liferay container is enabled.
 - **paths.source** — Required in `source` mode. Optional in `docker` mode but useful for `/core` to find the portal repo.
 - **paths.bundleCache** — Shared download cache, safe to delete; bundles are re-fetched on demand.
@@ -44,7 +44,7 @@ The plugin treats `.liferay-workspace.json` as the **single source of truth** fo
 The `/core` skill and any other skill that searches the portal source resolves the path in this order:
 
 1. `.liferay-workspace.json` — `paths.source`.
-2. `../liferay-portal-ee` (sibling to the workspace directory).
+2. `../liferay-dxp` (sibling to the workspace directory).
 3. `../liferay-portal`.
 4. Ask the user.
 

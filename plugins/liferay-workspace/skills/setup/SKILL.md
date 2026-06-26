@@ -43,7 +43,7 @@ This step always runs, including on `/setup` reprocess, so plugin script fixes p
 Collect **all** of the following values regardless of chosen mode (so source-mode switching works later without re-running `/setup`). Display a summary table and ask: **"Type a setting name to change it, or `ok` to continue:"**
 
 - **Mode**: Docker (default, can be flipped later via `bash scripts/local_setup.sh --source`) or Source.
-- **Source**: where to clone `liferay-portal-ee` (default: `../liferay-portal-ee`, sibling to the workspace).
+- **Source**: where to clone `liferay-dxp` (default: `../liferay-dxp`, sibling to the workspace).
 - **Bundle cache** (default `~/.liferay/liferay-binaries-cache-2020`).
 - **Bundles**: source-mode bundles output (default: `<source>/../bundles`, matching Ant's `app.server.parent.dir=../bundles` default). If the user has an `app.server.${user.name}.properties` in the portal source, its `app.server.parent.dir` value overrides ant's choice — point this at the same path to keep the script in sync.
 - **Hotfix**: scan `~/.liferay/hotfixes/` for zips; if multiple found present a numbered list, if none found leave blank.

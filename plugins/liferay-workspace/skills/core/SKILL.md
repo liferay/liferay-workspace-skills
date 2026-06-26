@@ -1,7 +1,7 @@
 ---
 allowed-tools: Read Grep Glob Bash(bash scripts/rg-liferay.sh *) Bash(git -C *) Bash(cat *) Bash(ls *) Bash(find *)
 argument-hint: <root-cause|guide> <query>
-description: Search and analyze Liferay Portal source code. Modes — root-cause (investigate bugs from stack traces) or guide (understand a feature). Use when working with liferay-portal / liferay-portal-ee, or invoked via /core.
+description: Search and analyze Liferay Portal source code. Modes — root-cause (investigate bugs from stack traces) or guide (understand a feature). Use when working with liferay-portal / liferay-dxp, or invoked via /core.
 name: core
 ---
 
@@ -18,7 +18,7 @@ For detailed Liferay source structure, module conventions, and search strategies
 Determine the portal source directory. Check in order:
 
 1. Read `.liferay-workspace.json` — use `paths.source`
-2. Check if `../liferay-portal-ee` or `../liferay-portal` exists
+2. Check if `../liferay-dxp` or `../liferay-portal` exists
 3. Ask the user for the path
 
 Store the resolved path as `$PORTAL_SRC` for all subsequent steps.

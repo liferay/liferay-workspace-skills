@@ -1,6 +1,6 @@
 # Liferay Workspace Claude Plugin
 
-A Claude plugin for Liferay Workspace projects. It provides skills for local development setup, portal source navigation, and integration with the Liferay product Jira project (LPD). Targets both **Docker** mode (Liferay runs in a container) and **Source** mode (Liferay built from `liferay-portal-ee`).
+A Claude plugin for Liferay Workspace projects. It provides skills for local development setup, portal source navigation, and integration with the Liferay product Jira project (LPD). Targets both **Docker** mode (Liferay runs in a container) and **Source** mode (Liferay built from `liferay-dxp`).
 
 ## Skill Catalog
 
@@ -40,7 +40,7 @@ The Jira skills follow the **print, do not run** pattern documented in [`rules/j
 
 | Aspect | Docker | Source |
 | --- | --- | --- |
-| Liferay | Runs in the `liferay` container | Built from `liferay-portal-ee`, runs locally on 8080 |
+| Liferay | Runs in the `liferay` container | Built from `liferay-dxp`, runs locally on 8080 |
 | Setup time | ~5 minutes | 30–60+ minutes (first build) |
 | Compose file | `docker-compose.yml` | `docker-compose.yml` + `docker-compose.source.yml` (disables the `liferay` service) |
 | Use when | Iterating on workspace modules and client extensions | Modifying portal core or debugging into portal source |

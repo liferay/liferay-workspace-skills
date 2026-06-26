@@ -10,7 +10,7 @@ name: pr
 
 Create a GitHub pull request, then **print** the Jira `curl` commands that transition the linked ticket to review and record the PR URL. The skill runs `gh pr create` directly; all Jira REST calls are printed for the user to run manually. Follow the conventions in [`../../rules/jira.md`](../../rules/jira.md) for the Jira side and [`../../rules/commit.md`](../../rules/commit.md) for the PR title format.
 
-When the repository carries a `.github/CODEOWNERS` file with `@liferay-*` handles (the convention used by `liferay-portal` and `liferay-portal-ee`), the PR is routed to the owning team's fork rather than to upstream `liferay/<repo>`. Follow [`../../rules/codeowners.md`](../../rules/codeowners.md) for owner resolution, fork detection, and the cross-repository `gh pr create` invocation. The steps below mark every place where the routing branch applies.
+When the repository carries a `.github/CODEOWNERS` file with `@liferay-*` handles (the convention used by `liferay-portal` and `liferay-dxp`), the PR is routed to the owning team's fork rather than to upstream `liferay/<repo>`. Follow [`../../rules/codeowners.md`](../../rules/codeowners.md) for owner resolution, fork detection, and the cross-repository `gh pr create` invocation. The steps below mark every place where the routing branch applies.
 
 ## Step 1 — Gather Context
 
@@ -98,6 +98,8 @@ Record the resolved `<team-organization>` (for example, `liferay-bpm`) for Step 
 basename "$(git config --get remote.origin.url)" .git
 ```
 
+When this returns `liferay-dxp`, use `liferay-portal` as the repository name instead — contributors cannot open PRs against the private `liferay-dxp` or its forks, so the PR (and the user's fork in Step 4) targets the public `liferay-portal`. See [`../../rules/codeowners.md`](../../rules/codeowners.md).
+
 ## Step 4 — Ensure Remote Is Up to Date
 
 Check whether the branch is pushed:
@@ -172,7 +174,7 @@ gh pr create \
 
 ### Routed Variant
 
-Use the team organization resolved in Step 3, the user fork organization resolved in Step 4, and the repository name from `basename`. The base branch is always `master` for `liferay-portal` and `liferay-portal-ee`.
+Use the team organization resolved in Step 3, the user fork organization resolved in Step 4, and the repository name from `basename` (normalized to `liferay-portal` when the checkout is `liferay-dxp`, per Step 3). The base branch is always `master` — the default branch of `liferay-portal`.
 
 ```bash
 gh pr create \

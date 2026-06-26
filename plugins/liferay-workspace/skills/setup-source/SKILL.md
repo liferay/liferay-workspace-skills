@@ -1,5 +1,5 @@
 ---
-description: Write source-mode config files for a Liferay Workspace (portal-env.properties, docker-compose.source.yml). Cloning and building liferay-portal-ee is handled by scripts/local_setup.sh --source. Use when the user asks to set up portal source mode or invokes /setup-source.
+description: Write source-mode config files for a Liferay Workspace (portal-env.properties, docker-compose.source.yml). Cloning and building liferay-dxp is handled by scripts/local_setup.sh --source. Use when the user asks to set up portal source mode or invokes /setup-source.
 disable-model-invocation: false
 name: setup-source
 ---
@@ -8,7 +8,7 @@ Invoked unconditionally by `/setup` (regardless of the user's chosen initial mod
 
 `.liferay-workspace.json` is the single source of truth — `local_setup.sh` reads `paths.source` and `paths.bundles` from it directly via `jq`. This skill only writes the source-mode-specific files below.
 
-The clone of `liferay-portal-ee` and the `ant all` build are run by `scripts/local_setup.sh --source` (via `step_prereqs`) on the first source-mode boot — do not invoke them from this skill.
+The clone of `liferay-dxp` and the `ant all` build are run by `scripts/local_setup.sh --source` (via `step_prereqs`) on the first source-mode boot — do not invoke them from this skill.
 
 ## Step C — Source configs
 
