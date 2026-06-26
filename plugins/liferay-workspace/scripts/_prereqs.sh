@@ -162,7 +162,7 @@ resolve_product_version_from_gradle() {
 	echo "$product"
 }
 
-readonly LIFERAY_PORTAL_EE_URL="git@github.com:liferay/liferay-portal-ee.git"
+readonly LIFERAY_PORTAL_EE_URL="git@github.com:liferay/liferay-dxp.git"
 
 _clone_or_update_portal_ee() {
 	local git_revision="$1"
