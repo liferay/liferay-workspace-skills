@@ -1,9 +1,7 @@
 ---
 
 paths:
-  - "skills/bug/**/*.md"
-  - "skills/feature-request/**/*.md"
-  - "skills/pr/**/*.md"
+  - "skills/pr-review/**/*.md"
 
 ---
 

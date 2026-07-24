@@ -18,19 +18,7 @@ A Claude plugin for Liferay Workspace projects. It provides skills for local dev
 | Skill | Purpose |
 | --- | --- |
 | `core` | Search and analyze the Liferay Portal source. Two modes — `root-cause` for bug investigation, `guide` for feature understanding |
-| `plan` | Produce an implementation plan for a ticket or feature, scoped to the active workspace |
-| `implement` | Create or modify workspace files (Java, JSP, gradle, client-extension), build, and deploy |
-| `commit` | Stage and create a Git commit per the Liferay convention (see [`rules/commit.md`](rules/commit.md)) |
-| `pr` | Create a GitHub PR, then **print** the Jira `curl` commands for the user to run manually (see [`rules/jira.md`](rules/jira.md)) |
-
-### Jira
-
-| Skill | Purpose |
-| --- | --- |
-| `bug` | Build the Jira REST `curl` command to file a Bug in LPD and print it for the user to run |
-| `feature-request` | Build the Jira REST `curl` command to file a Task (feature request) in LPD and print it for the user to run |
-
-The Jira skills follow the **print, do not run** pattern documented in [`rules/jira.md`](rules/jira.md). Skills assemble the payload and emit the `curl` invocation; the user reviews and runs it.
+| `pr-review` | Review a pull request against Liferay development best practices — rebase state, ticket-referenced commits, Jira link, Source Formatter / Service Builder commit hygiene, and commit-message quality |
 
 ## Configuration Source of Truth
 
@@ -66,8 +54,8 @@ The `_*.sh` files are sourced by `local_setup.sh`, never executed standalone.
 
 The plugin keeps cross-skill conventions in dedicated rules files so they live in one place:
 
-- [`rules/jira.md`](rules/jira.md) — Jira REST API auth, project / issue type / transition IDs, the print-do-not-run execution model
-- [`rules/commit.md`](rules/commit.md) — `TICKET-000 Imperative verb description` format and ticket-extraction order
+- [`rules/jira.md`](rules/jira.md) — Jira REST API auth, project / issue type / transition IDs (referenced when validating PR Jira links)
+- [`rules/commit.md`](rules/commit.md) — `TICKET-000 Imperative verb description` format and ticket-extraction order (the commit-message quality bar `pr-review` checks against)
 - [`rules/workspace-config.md`](rules/workspace-config.md) — `.liferay-workspace.json` schema, portal-source resolution, mode detection
 - [`rules/markdown-style.md`](rules/markdown-style.md) — Markdown style for plugin files (Title Case, long-form flags, tab indentation, no trailing newline)
 
@@ -75,13 +63,11 @@ The plugin keeps cross-skill conventions in dedicated rules files so they live i
 
 | Variable | Used By | Purpose |
 | --- | --- | --- |
-| `JIRA_API_USER` | `bug`, `feature-request`, `pr` | Jira Cloud user email |
-| `JIRA_API_TOKEN` | `bug`, `feature-request`, `pr` | Jira API token (https://id.atlassian.com/manage-profile/security/api-tokens) |
 | `NO_COLOR` | `scripts/_logging.sh` | Disables ANSI color output (no-color.org standard) |
 
 ## External Tools
 
-- `gh` — GitHub CLI, used by `pr` for PR creation
-- `git` — used by `commit`, `pr`, and most other skills
+- `gh` — GitHub CLI, used by `pr-review` to read pull requests
+- `git` — used by `setup`, `core`, `pr-review`, and most other skills
 - `docker compose` (v2) — used by `setup`, `clean`, and `local_setup.sh`
 - `java`, `ant`, `gradle` — runtime requirements verified by `doctor`

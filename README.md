@@ -11,7 +11,7 @@
 
 ---
 
-Slash commands for Liferay DXP workspaces: Docker/source setup, hotfixes, licenses, portal source search, and Jira/PR workflows.
+Slash commands for Liferay DXP workspaces: Docker/source setup, hotfixes, licenses, portal source search, and PR review.
 
 ---
 
@@ -50,24 +50,19 @@ The wizard walks you through Docker- or source-mode setup, generates `.liferay-w
 | Workspace | `/liferay-workspace:doctor` | Prerequisite checks and running-service health dashboard |
 | Workspace | `/liferay-workspace:clean` | Remove containers, build artifacts, and bundle data |
 | Workspace | `/liferay-workspace:core <mode> <query>` | Portal source analysis — `root-cause` or `guide` modes |
-| Dev | `/liferay-workspace:plan <ticket\|description>` | Implementation plan — affected modules, steps, testing, risks |
-| Dev | `/liferay-workspace:implement <ticket\|description>` | Implement a feature or fix from a plan or description |
-| Dev | `/liferay-workspace:commit [TICKET-000] [description]` | Git commit following `TICKET-000 Imperative verb description` convention |
-| Dev | `/liferay-workspace:pr [TICKET-000]` | GitHub PR with Jira link and structured description |
-| Jira | `/liferay-workspace:bug <summary>` | File a Jira bug with steps, version, actual/expected results |
-| Jira | `/liferay-workspace:feature-request <summary>` | File a Jira feature request with assumptions and acceptance criteria |
+| Dev | `/liferay-workspace:pr-review [PR URL\|number\|diff]` | Review a pull request against Liferay best practices — rebase state, ticketed commits, Jira link, commit-message quality |
 
 ---
 
 ## Workflow
 
-The natural development chain:
+The natural setup chain:
 
 ```
-setup → doctor → plan → implement → commit → pr
+setup → doctor
 ```
 
-`core` is invoked on demand for portal-source analysis; `bug` and `feature-request` file Jira tickets independent of the chain.
+`core` is invoked on demand for portal-source analysis, and `pr-review` reviews a pull request independent of the chain.
 
 <details>
 <summary><strong>Cross-skill call graph</strong></summary>
@@ -77,11 +72,6 @@ flowchart LR
     setup --> doctor
     setup --> clean
     setup -->|source mode| setup-source
-    plan --> core
-    implement --> core
-    implement --> commit --> pr
-    bug -.-> pr
-    feature-request -.-> pr
 ```
 
 </details>
@@ -298,90 +288,22 @@ Usage Guide:
 </details>
 
 <details>
-<summary><strong>Planning and implementing a feature</strong></summary>
+<summary><strong>Reviewing a pull request</strong></summary>
 
 ```
-> /liferay-workspace:plan LPD-12345 Add custom field validation for object definitions
+> /liferay-workspace:pr-review https://github.com/org/repo/pull/42
 
-Implementation Plan
-===================
-Ticket:      LPD-12345
-Summary:     Add custom field validation for object definitions
-Complexity:  Medium
+PR Review — LPD-12345 Add custom field validation for object definitions
+========================================================================
+  ✓ Branch rebased on target (no merge commits)
+  ✓ Every commit references the ticket (LPD-12345)
+  ✓ Description links the Jira story
+  ✗ Source Formatter commit is not the last commit
+  ⚠ Service Builder output mixed into a custom-logic commit
 
-Affected Modules:
-  - modules/objects/objects-validation — new validation logic
-  - modules/objects/objects-web — UI for validation rules
-
-Steps:
-  1. Create ObjectFieldValidationImpl in objects-validation
-  2. Register OSGi component with @Component annotation
-  3. Add validation rule configuration UI in objects-web
-  4. Write integration tests
-
-Ready to proceed, or any adjustments?
-```
-
-```
-> /liferay-workspace:implement LPD-12345
-
-# Implements the plan, builds, and deploys
-✓ ObjectFieldValidationImpl.java created
-✓ Validation UI component added
-✓ Build passed
-✓ Deployed to bundles/deploy
-
-Next: run /commit to commit, then /pr to open a pull request.
-```
-
-</details>
-
-<details>
-<summary><strong>Committing and creating a PR</strong></summary>
-
-```
-> /liferay-workspace:commit LPD-12345 Add custom field validation for object definitions
-
-✓ 4 files staged
-✓ Created: LPD-12345 Add custom field validation for object definitions
-```
-
-```
-> /liferay-workspace:pr LPD-12345
-
-Pull Request Created
-====================
-PR:       https://github.com/org/repo/pull/42
-Ticket:   https://liferay.atlassian.net/browse/LPD-12345
-Title:    LPD-12345 Add custom field validation for object definitions
-Base:     main
-Commits:  1
-```
-
-</details>
-
-<details>
-<summary><strong>Filing a bug report</strong></summary>
-
-```
-> /liferay-workspace:bug NPE when approving journal articles with null display date
-
-Bug Report
-==========
-Summary:     NPE when approving journal articles with null display date
-Component:   Journal
-Affects:     Liferay DXP 2026.q1.2
-Severity:    Major
-
-Steps to Reproduce:
-  1. Create a journal article via Headless API without displayDate
-  2. Submit for workflow approval
-  3. Approve the article
-
-Actual Result:   NullPointerException at JournalArticleLocalServiceImpl:4538
-Expected Result: Article approved successfully with default display date
-
-Anything to adjust before filing?
+Findings:
+  - Move the `LPD-12345 SF` commit to the end of the branch
+  - Split Service Builder output into its own `LPD-12345 Build Service` commit
 ```
 
 </details>

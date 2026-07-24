@@ -1,8 +1,7 @@
 ---
 
 paths:
-  - "skills/commit/**/*.md"
-  - "skills/pr/**/*.md"
+  - "skills/pr-review/**/*.md"
 
 ---
 
