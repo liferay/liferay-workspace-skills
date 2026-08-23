@@ -1,0 +1,22 @@
+---
+allowed-tools: Bash(bash scripts/local_setup.sh *) Bash(grep *) Edit Read Write
+description: Enable Liferay feature flags in a Liferay Workspace. Use when the user asks to enable a feature flag, when a Headless endpoint returns 404 or a bare 400 UnsupportedOperationException, or invokes /feature-flags.
+disable-model-invocation: false
+name: feature-flags
+---
+
+Flag levels, the Instance Settings UI, properties, and environment variable forms are documented at https://learn.liferay.com/w/dxp/security-and-administration/administration/configuring-liferay/feature-flags. Read it; do not answer from memory.
+
+Portal properties in `portal-ext.properties` are read at boot, so a restart is required if dev feature flags are added and portal is live.
+
+## Diagnosing an Unknown Flag Gate
+
+When a Headless operation returns `400 UnsupportedOperationException` and the log is silent, the feature may be hidden behind a feature flag. The portal pattern is:
+
+```java
+if (!FeatureFlagManagerUtil.isEnabled(companyId, "LPD-XXXXX")) {
+	throw new UnsupportedOperationException();
+}
+```
+
+JAX-RS converts the bare `UnsupportedOperationException` into a 400 with no useful response body, so the flag key never reaches the client. To find it, search the portal source for `LPD-` references in the relevant `*ResourceImpl`.
