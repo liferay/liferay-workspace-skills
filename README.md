@@ -19,7 +19,7 @@ Slash commands for Liferay DXP workspaces: Docker/source setup, hotfixes, licens
 
 ```bash
 # Dev / local install — point Claude Code at the plugin directory
-claude --plugin-dir /path/to/liferay-workspace-claude-plugin
+claude --plugin-dir /path/to/liferay-workspace-claude-plugin/plugins/liferay-workspace
 ```
 
 For a persistent install via marketplace:
