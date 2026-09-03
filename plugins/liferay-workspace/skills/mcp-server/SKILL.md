@@ -8,6 +8,18 @@ Setup, endpoint, transport, auth, and client configuration are documented at htt
 
 Route any feature flag the docs name through `liferay-workspace:feature-flags` rather than editing properties directly.
 
+## Release Differences
+
+The feature flag level, the endpoint, and the transport all changed across releases. Read `version` from `.liferay-workspace.json` and apply the matching row.
+
+| Release | Feature Flag | Endpoint | Transport |
+| --- | --- | --- | --- |
+| 2025.Q4 | `LPD-63311` (beta) | `/o/mcp/sse` | Server Sent Events |
+| 2026.Q1 and 2026.Q2 | `LPD-63311` (beta) | `/o/mcp` | Streamable HTTP |
+| 2026.Q3 and later | `LPD-63311` (release) | `/o/mcp` | Streamable HTTP |
+
+The MCP server is not available before 2025.Q4.
+
 ## 403 Error
 
 A fresh instance creates `test@liferay.com` with `passwordReset=true` and `agreedToTermsOfUse=false`, and every authenticated call returns 403 until both clear. The handshake still succeeds and tools still list, so a healthy connection is not evidence that tool calls will work.
