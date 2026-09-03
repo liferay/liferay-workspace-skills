@@ -7,7 +7,23 @@ name: feature-flags
 
 Flag levels, the Instance Settings UI, properties, and environment variable forms are documented at https://learn.liferay.com/w/dxp/security-and-administration/administration/configuring-liferay/feature-flags. Read it; do not answer from memory.
 
-Portal properties in `portal-ext.properties` are read at boot, so a restart is required if dev feature flags are added and portal is live.
+Portal properties in `portal-ext.properties` are read at boot, so adding any feature flag there requires a restart when portal is live. Toggling a flag in the Instance Settings UI takes effect immediately.
+
+## Enabling a Flag
+
+Enable the flag at **Control Panel → Instance Settings → Feature Flags**. The change takes effect immediately.
+
+Dev flags are not listed there. Enable one by adding its property to `portal-ext.properties` and restarting:
+
+```properties
+feature.flag.LPD-63311=true
+```
+
+## Determining a Flag Level
+
+Never state a level from memory and never infer one from the flag key. The feature's own page on Liferay Learn names the flag and the level it sits under, and reflects the most recent quarterly release. Changes to a flag's level are listed per release on the **Default Setting and Feature Flag Changes** pages indexed at https://learn.liferay.com/w/dxp/self-hosted-installation-and-upgrades/upgrading-liferay/deprecations-and-breaking-changes-reference.
+
+A flag that does not appear in Instance Settings is a dev flag.
 
 ## Locate the Portal Source
 
