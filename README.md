@@ -3,7 +3,7 @@
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 </p>
 
-<h1 align="center">Liferay Workspace Claude Plugin</h1>
+<h1 align="center">Liferay Workspace Skills</h1>
 
 <p align="center">
   <strong>Set up, manage, and develop in Liferay DXP workspaces with AI-powered slash commands.</strong>
@@ -19,13 +19,13 @@ Slash commands for Liferay DXP workspaces: Docker/source setup, hotfixes, licens
 
 ```bash
 # Dev / local install — point Claude Code at the plugin directory
-claude --plugin-dir /path/to/liferay-workspace-claude-plugin/plugins/liferay-workspace
+claude --plugin-dir /path/to/liferay-workspace-skills/plugins/liferay-workspace
 ```
 
 For a persistent install via marketplace:
 
 ```bash
-/plugin marketplace add liferay/liferay-workspace-claude-plugin
+/plugin marketplace add liferay/liferay-workspace-skills
 /plugin install liferay-workspace@liferay-workspace-plugins
 ```
 
